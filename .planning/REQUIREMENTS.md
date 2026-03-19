@@ -36,7 +36,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **INF-01**: DynamicWeb AppStore app structure (.NET 8.0+, NuGet package)
 - [ ] **INF-02**: YAML round-trip fidelity — handle tildes, CRLFs, HTML content without corruption
-- [ ] **INF-03**: Windows long-path handling for deep content hierarchies
+- [x] **INF-03**: Windows long-path handling for deep content hierarchies
 
 ## v2 Requirements
 
@@ -75,7 +75,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CFG-02 | Phase 2 | Complete |
 | SER-03 | Phase 3 | Pending |
 | INF-02 | Phase 3 | Pending |
-| INF-03 | Phase 3 | Pending |
+| INF-03 | Phase 3 | Complete |
 | DES-01 | Phase 4 | Pending |
 | DES-02 | Phase 4 | Pending |
 | DES-03 | Phase 4 | Pending |
