@@ -23,13 +23,14 @@ Developers can reliably move content between DynamicWeb environments through sou
 - [x] New numeric IDs assigned on deserialize when GUID doesn't exist in target — Validated in Phase 4
 - [x] Configurable via standalone config file (not DynamicWeb admin UI) — Validated in Phase 2
 
+- [x] Two scheduled tasks: one for full serialization, one for full deserialization — Validated in Phase 5
+- [x] Structured as a DynamicWeb AppStore app (NuGet package with `dynamicweb-app-store` tag) — Validated in Phase 5
+- [x] Comprehensive error handling and logging — Validated in Phase 4-5
+
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Two scheduled tasks: one for full serialization, one for full deserialization
-- [ ] Structured as a DynamicWeb AppStore app (NuGet package with `dynamicweb-app-store` tag)
-- [ ] Comprehensive error handling and logging
 - [ ] Tested across multiple content trees beyond the initial test case
 
 ### Out of Scope
@@ -100,4 +101,4 @@ Developers can reliably move content between DynamicWeb environments through sou
 | Two separate scheduled tasks | Separation of concerns: serialize and deserialize are distinct operations | — Pending |
 
 ---
-*Last updated: 2026-03-19 after Phase 4 completion*
+*Last updated: 2026-03-20 after Phase 5 completion — all v1.0 milestone phases complete*
