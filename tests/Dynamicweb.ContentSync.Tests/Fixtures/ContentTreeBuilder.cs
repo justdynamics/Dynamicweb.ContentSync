@@ -1,0 +1,124 @@
+using Dynamicweb.ContentSync.Models;
+
+namespace Dynamicweb.ContentSync.Tests.Fixtures;
+
+public static class ContentTreeBuilder
+{
+    public static SerializedArea BuildSampleTree()
+    {
+        var page1 = BuildSinglePage("Customer Center") with
+        {
+            SortOrder = 1,
+            IsActive = true,
+            Fields = new Dictionary<string, object>
+            {
+                ["title"] = "Customer Center",
+                ["body"] = "<p>Test &amp; value</p>",
+                ["tilde"] = "~",
+                ["crlf"] = "Line1\r\nLine2"
+            },
+            GridRows = new List<SerializedGridRow>
+            {
+                new SerializedGridRow
+                {
+                    Id = Guid.NewGuid(),
+                    SortOrder = 1,
+                    Columns = new List<SerializedGridColumn>
+                    {
+                        new SerializedGridColumn
+                        {
+                            Id = 1,
+                            Width = 12,
+                            Paragraphs = new List<SerializedParagraph>
+                            {
+                                new SerializedParagraph
+                                {
+                                    ParagraphUniqueId = Guid.NewGuid(),
+                                    SortOrder = 1,
+                                    ItemType = "ContentModule",
+                                    Header = "Welcome",
+                                    Fields = new Dictionary<string, object>
+                                    {
+                                        ["text"] = "Hello World",
+                                        ["html"] = "<h1>Welcome</h1>"
+                                    }
+                                },
+                                new SerializedParagraph
+                                {
+                                    ParagraphUniqueId = Guid.NewGuid(),
+                                    SortOrder = 2,
+                                    ItemType = "ImageModule",
+                                    Fields = new Dictionary<string, object>
+                                    {
+                                        ["imageUrl"] = "/images/hero.jpg"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        var page2 = BuildSinglePage("About Us") with
+        {
+            SortOrder = 2,
+            IsActive = true,
+            Fields = new Dictionary<string, object>
+            {
+                ["title"] = "About Us",
+                ["body"] = "Plain text content"
+            },
+            GridRows = new List<SerializedGridRow>
+            {
+                new SerializedGridRow
+                {
+                    Id = Guid.NewGuid(),
+                    SortOrder = 1,
+                    Columns = new List<SerializedGridColumn>
+                    {
+                        new SerializedGridColumn
+                        {
+                            Id = 1,
+                            Width = 12,
+                            Paragraphs = new List<SerializedParagraph>
+                            {
+                                new SerializedParagraph
+                                {
+                                    ParagraphUniqueId = Guid.NewGuid(),
+                                    SortOrder = 1,
+                                    ItemType = "ContentModule",
+                                    Header = "About",
+                                    Fields = new Dictionary<string, object>
+                                    {
+                                        ["text"] = "About Us content"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        return new SerializedArea
+        {
+            AreaId = Guid.NewGuid(),
+            Name = "Main Website",
+            SortOrder = 1,
+            Pages = new List<SerializedPage> { page1, page2 }
+        };
+    }
+
+    public static SerializedPage BuildSinglePage(string name, Guid? guid = null)
+    {
+        return new SerializedPage
+        {
+            PageUniqueId = guid ?? Guid.NewGuid(),
+            Name = name,
+            MenuText = name,
+            UrlName = name.ToLowerInvariant().Replace(" ", "-"),
+            SortOrder = 1
+        };
+    }
+}
