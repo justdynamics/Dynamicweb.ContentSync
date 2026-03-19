@@ -13,7 +13,7 @@ ContentSync delivers developer-controlled content synchronization for DynamicWeb
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Content DTOs, YAML configuration, and mirror-tree file I/O (completed 2026-03-19)
-- [ ] **Phase 2: Configuration** - JSON config file format and predicate include/exclude system
+- [x] **Phase 2: Configuration** - JSON config file format and predicate include/exclude system (completed 2026-03-19)
 - [ ] **Phase 3: Serialization** - DynamicWeb-to-disk pipeline with deterministic, GUID-safe output
 - [ ] **Phase 4: Deserialization** - Disk-to-DynamicWeb pipeline with GUID identity resolution and atomic writes
 - [ ] **Phase 5: Integration** - Scheduled task wiring, SyncCoordinator, and AppStore packaging
@@ -44,7 +44,7 @@ Plans:
   2. A predicate rule with an include path matches items under that path and excludes items outside it
   3. An exclude rule overrides an include rule for overlapping paths
   4. The predicate can be evaluated in unit tests with no live DynamicWeb instance running
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [x] 02-01-PLAN.md — Config model, JSON loader with validation, and predicate include/exclude evaluator
@@ -91,7 +91,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete    | 2026-03-19 |
-| 2. Configuration | 1/1 | Complete | 2026-03-19 |
+| 2. Configuration | 1/1 | Complete    | 2026-03-19 |
 | 3. Serialization | 0/TBD | Not started | - |
 | 4. Deserialization | 0/TBD | Not started | - |
 | 5. Integration | 0/TBD | Not started | - |
