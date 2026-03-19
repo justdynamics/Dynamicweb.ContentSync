@@ -14,21 +14,20 @@ Developers can reliably move content between DynamicWeb environments through sou
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet — ship to validate)
+- [x] Serialize full content trees (Area > Pages > Grids > Rows > Paragraphs) to YAML files on disk — Validated in Phase 1-3
+- [x] Mirror-tree file layout: folder structure reflects content hierarchy with .yml files per item — Validated in Phase 1
+- [x] Unicorn-style predicate configuration to define which content trees to include/exclude — Validated in Phase 2
+- [x] PageUniqueId (GUID) as canonical identity — match on GUID, not numeric ID — Validated in Phase 3-4
+- [x] Source-wins conflict strategy: serialized files always overwrite target DB on deserialize — Validated in Phase 3-4
+- [x] Deserialize YAML files back into a DynamicWeb database — Validated in Phase 4
+- [x] New numeric IDs assigned on deserialize when GUID doesn't exist in target — Validated in Phase 4
+- [x] Configurable via standalone config file (not DynamicWeb admin UI) — Validated in Phase 2
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Serialize full content trees (Area > Pages > Grids > Rows > Paragraphs) to YAML files on disk
-- [ ] Deserialize YAML files back into a DynamicWeb database
-- [ ] Mirror-tree file layout: folder structure reflects content hierarchy with .yml files per item
-- [ ] Unicorn-style predicate configuration to define which content trees to include/exclude
-- [ ] PageUniqueId (GUID) as canonical identity — match on GUID, not numeric ID
-- [ ] Source-wins conflict strategy: serialized files always overwrite target DB on deserialize
-- [ ] New numeric IDs assigned on deserialize when GUID doesn't exist in target
 - [ ] Two scheduled tasks: one for full serialization, one for full deserialization
-- [ ] Configurable via standalone config file (not DynamicWeb admin UI)
 - [ ] Structured as a DynamicWeb AppStore app (NuGet package with `dynamicweb-app-store` tag)
 - [ ] Comprehensive error handling and logging
 - [ ] Tested across multiple content trees beyond the initial test case
@@ -101,4 +100,4 @@ Developers can reliably move content between DynamicWeb environments through sou
 | Two separate scheduled tasks | Separation of concerns: serialize and deserialize are distinct operations | — Pending |
 
 ---
-*Last updated: 2026-03-19 after initialization*
+*Last updated: 2026-03-19 after Phase 4 completion*
