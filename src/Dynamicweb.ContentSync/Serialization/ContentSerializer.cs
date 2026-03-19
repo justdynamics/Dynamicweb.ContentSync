@@ -34,14 +34,22 @@ public class ContentSerializer
     /// <summary>
     /// Serializes all predicates defined in the configuration to disk.
     /// Clears the reference resolver cache between predicates.
+    /// Logs a count summary of pages, grid rows, and paragraphs after all predicates are processed.
     /// </summary>
     public void Serialize()
     {
+        int totalPages = 0, totalGridRows = 0, totalParagraphs = 0;
+
         foreach (var predicate in _configuration.Predicates)
         {
-            SerializePredicate(predicate);
+            var area = SerializePredicate(predicate);
             _referenceResolver.Clear();
+
+            if (area != null)
+                CountItems(area.Pages, ref totalPages, ref totalGridRows, ref totalParagraphs);
         }
+
+        Log($"Serialization complete: {totalPages} pages, {totalGridRows} grid rows, {totalParagraphs} paragraphs serialized.");
     }
 
     // -------------------------------------------------------------------------
@@ -132,5 +140,16 @@ public class ContentSerializer
         }
 
         return _mapper.MapPage(page, serializedGridRows, serializedChildren);
+    }
+
+    private static void CountItems(IEnumerable<SerializedPage> pages, ref int pageCount, ref int gridRowCount, ref int paragraphCount)
+    {
+        foreach (var page in pages)
+        {
+            pageCount++;
+            gridRowCount += page.GridRows.Count;
+            paragraphCount += page.GridRows.Sum(gr => gr.Columns.Sum(c => c.Paragraphs.Count));
+            CountItems(page.Children, ref pageCount, ref gridRowCount, ref paragraphCount);
+        }
     }
 }
