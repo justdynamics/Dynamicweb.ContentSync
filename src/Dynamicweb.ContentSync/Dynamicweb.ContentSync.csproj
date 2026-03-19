@@ -13,4 +13,18 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Dynamicweb.dll contains Dynamicweb.Content (PageService, AreaService, GridService, ParagraphService, etc.)
+         Dynamicweb.Core.dll is a dependency of Dynamicweb.dll.
+         These DLLs are copied from Swift2.1 (net8.0) bin folder. -->
+    <Reference Include="Dynamicweb">
+      <HintPath>..\..\lib\Dynamicweb.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Dynamicweb.Core">
+      <HintPath>..\..\lib\Dynamicweb.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
 </Project>
