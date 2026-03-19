@@ -75,7 +75,11 @@ Plans:
   3. Deserialization never attempts to insert a child item before its parent exists in the database; the write order is always Areas first, then Pages, then GridRows, then Paragraphs
   4. If any write fails mid-run, the partially-applied state is either rolled back or clearly reported; the target database is never silently left in a broken partial state
   5. Dry-run mode reports exactly which items would be created, updated, or skipped without writing anything to the database
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — ContentDeserializer write pipeline with GUID identity, dependency-ordered writes, dry-run, and cascade error handling
+- [ ] 04-02-PLAN.md — DeserializeScheduledTask and integration tests against live DW instance
 
 ### Phase 5: Integration
 **Goal**: ContentSync is a runnable DynamicWeb AppStore app — serialize and deserialize scheduled tasks appear in the DW admin, execute the full pipeline, and the package is distributable via NuGet
@@ -98,5 +102,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Foundation | 2/2 | Complete    | 2026-03-19 |
 | 2. Configuration | 1/1 | Complete    | 2026-03-19 |
 | 3. Serialization | 2/3 | Complete    | 2026-03-19 |
-| 4. Deserialization | 0/TBD | Not started | - |
+| 4. Deserialization | 0/2 | Planned | - |
 | 5. Integration | 0/TBD | Not started | - |
