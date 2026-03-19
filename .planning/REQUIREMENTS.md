@@ -10,9 +10,9 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Serialization
 
 - [x] **SER-01**: Serialize full content tree (Area > Page > Grid > Row > Paragraph) to YAML files
-- [ ] **SER-02**: Mirror-tree file layout — folder structure reflects content hierarchy with .yml per item
+- [x] **SER-02**: Mirror-tree file layout — folder structure reflects content hierarchy with .yml per item
 - [ ] **SER-03**: Source-wins conflict resolution — serialized files always overwrite target DB on deserialize
-- [ ] **SER-04**: Deterministic serialization order to prevent git noise from non-deterministic DB queries
+- [x] **SER-04**: Deterministic serialization order to prevent git noise from non-deterministic DB queries
 
 ### Deserialization
 
@@ -69,8 +69,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | SER-01 | Phase 1 | Complete |
-| SER-02 | Phase 1 | Pending |
-| SER-04 | Phase 1 | Pending |
+| SER-02 | Phase 1 | Complete |
+| SER-04 | Phase 1 | Complete |
 | CFG-01 | Phase 2 | Pending |
 | CFG-02 | Phase 2 | Pending |
 | SER-03 | Phase 3 | Pending |

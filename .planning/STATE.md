@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-foundation/01-01-PLAN.md
-last_updated: "2026-03-19T13:07:08.601Z"
+stopped_at: Completed 01-foundation/01-02-PLAN.md
+last_updated: "2026-03-19T13:13:28.845Z"
 last_activity: 2026-03-19 — Roadmap created, phases derived from requirements
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -51,6 +51,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 6min | 2 tasks | 14 files |
+| Phase 01-foundation P02 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,8 @@ Recent decisions affecting current work:
 - [Research]: Do NOT serialize DW model objects directly — always map to plain C# DTOs first
 - [Phase 01-foundation]: ForceStringScalarEmitter: DoubleQuoted for CRLF strings (Literal normalizes \r\n to \n per YAML spec)
 - [Phase 01-foundation]: Literal block style only for LF-only multiline strings; DoubleQuoted is safe default for tilde, bang, empty, CRLF
+- [Phase 01-foundation]: OmitEmptyCollections on private _fileSerializer (not shared YamlConfiguration) so page.yml/area.yml omit empty child-collection keys without affecting other consumers
+- [Phase 01-foundation]: Paragraphs written flat in grid-row folder; ReadTree restores all to first column — multi-column paragraph attribution deferred to later phase
 
 ### Pending Todos
 
@@ -81,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T13:07:08.597Z
-Stopped at: Completed 01-foundation/01-01-PLAN.md
+Last session: 2026-03-19T13:13:28.841Z
+Stopped at: Completed 01-foundation/01-02-PLAN.md
 Resume file: None
