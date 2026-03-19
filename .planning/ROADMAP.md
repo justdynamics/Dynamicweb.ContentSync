@@ -32,8 +32,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 01-01-PLAN.md — DTOs, YamlConfiguration with ForceStringScalarEmitter, and round-trip fidelity tests
-- [ ] 01-02-PLAN.md — FileSystemStore mirror-tree I/O with deterministic output and comprehensive tests
+- [x] 01-01-PLAN.md — DTOs, YamlConfiguration with ForceStringScalarEmitter, and round-trip fidelity tests
+- [x] 01-02-PLAN.md — FileSystemStore mirror-tree I/O with deterministic output and comprehensive tests
 
 ### Phase 2: Configuration
 **Goal**: A developer can define which content trees ContentSync operates on through a config file, and the predicate system correctly evaluates include/exclude rules
@@ -44,7 +44,10 @@ Plans:
   2. A predicate rule with an include path matches items under that path and excludes items outside it
   3. An exclude rule overrides an include rule for overlapping paths
   4. The predicate can be evaluated in unit tests with no live DynamicWeb instance running
-**Plans**: TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 02-01-PLAN.md — Config model, JSON loader with validation, and predicate include/exclude evaluator
 
 ### Phase 3: Serialization
 **Goal**: Running the serializer against a live DynamicWeb instance produces a complete, GUID-safe, deterministic YAML file tree on disk
@@ -88,7 +91,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete    | 2026-03-19 |
-| 2. Configuration | 0/TBD | Not started | - |
+| 2. Configuration | 0/1 | Planning complete | - |
 | 3. Serialization | 0/TBD | Not started | - |
 | 4. Deserialization | 0/TBD | Not started | - |
 | 5. Integration | 0/TBD | Not started | - |
