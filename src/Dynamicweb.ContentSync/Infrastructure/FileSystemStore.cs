@@ -223,11 +223,23 @@ public class FileSystemStore : IContentStore
         if (fullPath.Length > 247)
         {
             // Truncate folder name to fit within the limit
-            var maxFolderLength = 247 - parentDirectory.Length - 1; // -1 for separator
+            // -1 for the path separator between parent and folder
+            var maxFolderLength = 247 - parentDirectory.Length - 1;
             var suffix = $" [{guid.ToString("N")[..6]}]";
-            var truncatedName = folderName.Length > maxFolderLength - suffix.Length
-                ? folderName[..(maxFolderLength - suffix.Length)] + suffix
-                : folderName;
+
+            string truncatedName;
+            if (maxFolderLength <= suffix.Length)
+            {
+                // Parent path itself is too long; use only the GUID suffix as folder name
+                truncatedName = guid.ToString("N")[..8];
+            }
+            else
+            {
+                truncatedName = folderName.Length > maxFolderLength - suffix.Length
+                    ? folderName[..(maxFolderLength - suffix.Length)] + suffix
+                    : folderName;
+            }
+
             fullPath = Path.Combine(parentDirectory, truncatedName);
             Console.Error.WriteLine($"[ContentSync] Warning: Path truncated to fit OS limits: '{fullPath}'");
         }

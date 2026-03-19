@@ -455,6 +455,137 @@ public class FileSystemStoreTests : IDisposable
     }
 
     // -------------------------------------------------------------------------
+    // Long-path handling (INF-03)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void WriteTree_LongPageName_TruncatesPathAndWarns()
+    {
+        // Create a page name 250+ characters long
+        var longName = new string('A', 250);
+        var area = new SerializedArea
+        {
+            AreaId = Guid.NewGuid(),
+            Name = "Test Area",
+            SortOrder = 1,
+            Pages = new List<SerializedPage>
+            {
+                ContentTreeBuilder.BuildSinglePage(longName) with { SortOrder = 1 }
+            }
+        };
+
+        var originalError = Console.Error;
+        var errorCapture = new StringWriter();
+        Console.SetError(errorCapture);
+        try
+        {
+            _store.WriteTree(area, _tempRoot);
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
+
+        // At least one page folder should have been created
+        var areaPath = Path.Combine(_tempRoot, "Test Area");
+        var createdDirs = Directory.GetDirectories(areaPath);
+        Assert.NotEmpty(createdDirs);
+
+        // The created folder path length must be <= 247 characters
+        foreach (var dir in createdDirs)
+        {
+            Assert.True(dir.Length <= 247, $"Folder path exceeds 247 chars: '{dir}' (length={dir.Length})");
+        }
+
+        // A warning should have been emitted
+        var errorOutput = errorCapture.ToString();
+        Assert.Contains("[ContentSync] Warning: Path truncated", errorOutput, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void WriteTree_DeeplyNestedChildren_HandlesLongPaths()
+    {
+        // Create a 5-level deep tree with 50-char names per level
+        // Combined path will exceed 260 chars on deeper levels depending on temp root
+        var level5 = BuildDeepChildPage("LevelFive_" + new string('E', 40), 1, null);
+        var level4 = BuildDeepChildPage("LevelFour_" + new string('D', 40), 1, level5);
+        var level3 = BuildDeepChildPage("LevelThree" + new string('C', 40), 1, level4);
+        var level2 = BuildDeepChildPage("LevelTwo__" + new string('B', 40), 1, level3);
+        var level1 = BuildDeepChildPage("LevelOne__" + new string('A', 40), 1, level2);
+
+        var area = new SerializedArea
+        {
+            AreaId = Guid.NewGuid(),
+            Name = "Deep",
+            SortOrder = 1,
+            Pages = new List<SerializedPage> { level1 }
+        };
+
+        var originalError = Console.Error;
+        var errorCapture = new StringWriter();
+        Console.SetError(errorCapture);
+
+        // Should not throw
+        var exception = Record.Exception(() =>
+        {
+            Console.SetError(errorCapture);
+            _store.WriteTree(area, _tempRoot);
+        });
+        Console.SetError(originalError);
+
+        Assert.Null(exception);
+
+        // Top-level page folder should exist
+        var areaPath = Path.Combine(_tempRoot, "Deep");
+        Assert.True(Directory.Exists(areaPath), "Area directory should exist");
+        Assert.NotEmpty(Directory.GetDirectories(areaPath));
+
+        // If any warnings were emitted, they should be path truncation warnings
+        var errorOutput = errorCapture.ToString();
+        if (!string.IsNullOrEmpty(errorOutput))
+        {
+            Assert.Contains("[ContentSync] Warning", errorOutput, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void WriteTree_LongPath_DoesNotCrash()
+    {
+        // Create a page whose name combined with root path would exceed 300 chars
+        var longName = new string('X', 280);
+        var area = new SerializedArea
+        {
+            AreaId = Guid.NewGuid(),
+            Name = "A",
+            SortOrder = 1,
+            Pages = new List<SerializedPage>
+            {
+                ContentTreeBuilder.BuildSinglePage(longName) with { SortOrder = 1 }
+            }
+        };
+
+        // Should not throw — method must warn and handle gracefully
+        var exception = Record.Exception(() => _store.WriteTree(area, _tempRoot));
+        Assert.Null(exception);
+    }
+
+    private static SerializedPage BuildDeepChildPage(string name, int sortOrder, SerializedPage? child)
+    {
+        var page = ContentTreeBuilder.BuildSinglePage(name) with
+        {
+            SortOrder = sortOrder,
+            Fields = new Dictionary<string, object> { ["title"] = name }
+        };
+
+        if (child != null)
+        {
+            page = page with { Children = new List<SerializedPage> { child } };
+        }
+
+        return page;
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
