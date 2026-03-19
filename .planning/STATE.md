@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-19T17:51:00Z"
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-03-19T17:57:04.512Z"
 last_activity: 2026-03-19 — Phase 3 Plan 01 complete (recursive page hierarchy and INF-03 long-path tests)
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
   percent: 24
 ---
 
@@ -55,6 +55,7 @@ Progress: [███░░░░░░░] 24%
 | Phase 01-foundation P02 | 4min | 2 tasks | 3 files |
 | Phase 02-configuration P01 | 2min | 2 tasks | 6 files |
 | Phase 03-serialization P01 | 8min | 2 tasks | 4 files |
+| Phase 03-serialization P02 | 5min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,8 @@ Recent decisions affecting current work:
 - [Phase 03-serialization]: Children stored as nested subfolders rather than YAML arrays — keeps page.yml diff-friendly and consistent with existing folder structure
 - [Phase 03-serialization]: Per-level usedNames HashSet for sibling deduplication — siblings share a namespace per parent, not globally
 - [Phase 03-serialization]: SafeGetDirectory falls back to 8-char GUID folder name when parent path exceeds 247 chars — prevents ArgumentOutOfRangeException on extreme nesting
+- [Phase 03-serialization]: DLL reference over NuGet for Dynamicweb.Content: Dynamicweb.Core NuGet lacks Dynamicweb.Content namespace; DLLs copied from Swift2.1 bin as documented fallback
+- [Phase 03-serialization]: Services.Xxx static accessor chosen over new XxxService() — canonical DW10 pattern
 
 ### Pending Todos
 
@@ -94,5 +97,5 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T17:51:00Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-03-19T17:57:04.507Z
+Stopped at: Completed 03-02-PLAN.md

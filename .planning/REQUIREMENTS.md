@@ -11,7 +11,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **SER-01**: Serialize full content tree (Area > Page > Grid > Row > Paragraph) to YAML files
 - [x] **SER-02**: Mirror-tree file layout — folder structure reflects content hierarchy with .yml per item
-- [ ] **SER-03**: Source-wins conflict resolution — serialized files always overwrite target DB on deserialize
+- [x] **SER-03**: Source-wins conflict resolution — serialized files always overwrite target DB on deserialize
 - [x] **SER-04**: Deterministic serialization order to prevent git noise from non-deterministic DB queries
 
 ### Deserialization
@@ -35,7 +35,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Infrastructure
 
 - [ ] **INF-01**: DynamicWeb AppStore app structure (.NET 8.0+, NuGet package)
-- [ ] **INF-02**: YAML round-trip fidelity — handle tildes, CRLFs, HTML content without corruption
+- [x] **INF-02**: YAML round-trip fidelity — handle tildes, CRLFs, HTML content without corruption
 - [x] **INF-03**: Windows long-path handling for deep content hierarchies
 
 ## v2 Requirements
@@ -73,8 +73,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SER-04 | Phase 1 | Complete |
 | CFG-01 | Phase 2 | Complete |
 | CFG-02 | Phase 2 | Complete |
-| SER-03 | Phase 3 | Pending |
-| INF-02 | Phase 3 | Pending |
+| SER-03 | Phase 3 | Complete |
+| INF-02 | Phase 3 | Complete |
 | INF-03 | Phase 3 | Complete |
 | DES-01 | Phase 4 | Pending |
 | DES-02 | Phase 4 | Pending |
