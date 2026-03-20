@@ -17,17 +17,21 @@ public class ContentDeserializer
     private readonly IContentStore _store;
     private readonly Action<string>? _log;
     private readonly bool _isDryRun;
+    private readonly string? _filesRoot;
+    private readonly HashSet<string> _loggedTemplateMissing = new(StringComparer.OrdinalIgnoreCase);
 
     public ContentDeserializer(
         SyncConfiguration configuration,
         IContentStore? store = null,
         Action<string>? log = null,
-        bool isDryRun = false)
+        bool isDryRun = false,
+        string? filesRoot = null)
     {
         _configuration = configuration;
         _store = store ?? new FileSystemStore();
         _log = log;
         _isDryRun = isDryRun;
+        _filesRoot = filesRoot;
     }
 
     private void Log(string message) => _log?.Invoke(message);
@@ -92,6 +96,9 @@ public class ContentDeserializer
             foreach (var error in aggregated.Errors)
                 Log(error);
         }
+
+        if (_loggedTemplateMissing.Count > 0)
+            Log($"Template validation: {_loggedTemplateMissing.Count} missing template reference(s) detected — see warnings above");
 
         return aggregated;
     }
@@ -215,6 +222,9 @@ public class ContentDeserializer
     /// </summary>
     private int DeserializePage(SerializedPage dto, WriteContext ctx)
     {
+        ValidatePageLayout(dto.Layout);
+        ValidateItemType(dto.ItemType);
+
         if (!ctx.PageGuidCache.TryGetValue(dto.PageUniqueId, out var existingId))
         {
             // INSERT path — GUID not found in target area
@@ -237,6 +247,9 @@ public class ContentDeserializer
             page.Sort = dto.SortOrder;
             page.ItemType = dto.ItemType ?? string.Empty;
             page.LayoutTemplate = dto.Layout ?? string.Empty;
+            page.LayoutApplyToSubPages = dto.LayoutApplyToSubPages;
+            page.IsFolder = dto.IsFolder;
+            page.TreeSection = dto.TreeSection ?? string.Empty;
             // Do NOT set page.ID — leave 0 for insert path (Pitfall 4)
 
             var saved = Services.Pages.SavePage(page);
@@ -245,7 +258,21 @@ public class ContentDeserializer
             // Apply ItemType fields via ItemService (page.Item[key] = value does not persist)
             var refetched = Services.Pages.GetPage(saved.ID);
             if (refetched != null)
+            {
                 SaveItemFields(refetched.ItemType, refetched.ItemId, dto.Fields);
+
+                // Re-apply LayoutTemplate if DW overwrote it during HandleItemStructure
+                // (DW sets it to the ItemType's default template on new pages)
+                if (!string.IsNullOrEmpty(dto.Layout) && refetched.LayoutTemplate != dto.Layout)
+                {
+                    Log($"  Re-applying LayoutTemplate: '{refetched.LayoutTemplate}' -> '{dto.Layout}'");
+                    refetched.LayoutTemplate = dto.Layout;
+                    Services.Pages.SavePage(refetched);
+                }
+
+                // Apply PropertyItem fields (e.g. Icon, SubmenuType)
+                SavePropertyItemFields(refetched, dto.PropertyFields);
+            }
 
             ctx.Created++;
             Log($"CREATED page {dto.PageUniqueId} -> ID={saved.ID}");
@@ -278,11 +305,17 @@ public class ContentDeserializer
             existingPage.Sort = dto.SortOrder;
             existingPage.ItemType = dto.ItemType ?? string.Empty;
             existingPage.LayoutTemplate = dto.Layout ?? string.Empty;
+            existingPage.LayoutApplyToSubPages = dto.LayoutApplyToSubPages;
+            existingPage.IsFolder = dto.IsFolder;
+            existingPage.TreeSection = dto.TreeSection ?? string.Empty;
 
             Services.Pages.SavePage(existingPage);
 
             // Apply ItemType fields via ItemService (source-wins)
             SaveItemFields(existingPage.ItemType, existingPage.ItemId, dto.Fields);
+
+            // Apply PropertyItem fields (e.g. Icon, SubmenuType)
+            SavePropertyItemFields(existingPage, dto.PropertyFields);
 
             ctx.Updated++;
             Log($"UPDATED page {dto.PageUniqueId} (ID={existingId})");
@@ -338,6 +371,9 @@ public class ContentDeserializer
         Dictionary<Guid, int> gridRowCache,
         WriteContext ctx)
     {
+        ValidateGridRowDefinition(dto.DefinitionId);
+        ValidateItemType(dto.ItemType);
+
         if (!gridRowCache.TryGetValue(dto.Id, out var existingGridRowId))
         {
             // INSERT path
@@ -355,6 +391,7 @@ public class ContentDeserializer
                 row.DefinitionId = dto.DefinitionId;
             if (!string.IsNullOrEmpty(dto.ItemType))
                 row.ItemType = dto.ItemType;
+            ApplyGridRowVisualProperties(row, dto);
             // Do NOT set row.ID (insert path)
 
             Services.Grids.SaveGridRow(row);
@@ -430,6 +467,7 @@ public class ContentDeserializer
                 existingRow2.DefinitionId = dto.DefinitionId;
             if (!string.IsNullOrEmpty(dto.ItemType))
                 existingRow2.ItemType = dto.ItemType;
+            ApplyGridRowVisualProperties(existingRow2, dto);
 
             Services.Grids.SaveGridRow(existingRow2);
 
@@ -476,6 +514,8 @@ public class ContentDeserializer
         Dictionary<Guid, int> paragraphCache,
         WriteContext ctx)
     {
+        ValidateItemType(dto.ItemType);
+
         if (!paragraphCache.TryGetValue(dto.ParagraphUniqueId, out var existingParagraphId))
         {
             // INSERT path
@@ -574,6 +614,68 @@ public class ContentDeserializer
     }
 
     // -------------------------------------------------------------------------
+    // Page PropertyItem persistence (Icon, SubmenuType, etc.)
+    // -------------------------------------------------------------------------
+
+    private void SavePropertyItemFields(Page page, Dictionary<string, object> propertyFields)
+    {
+        if (propertyFields.Count == 0)
+            return;
+
+        if (string.IsNullOrEmpty(page.PropertyItemId))
+        {
+            Log($"  Page {page.UniqueId} has no PropertyItemId — cannot write property fields");
+            return;
+        }
+
+        var propItem = page.PropertyItem;
+        if (propItem == null)
+        {
+            Log($"  WARNING: Could not load PropertyItem for page {page.UniqueId}");
+            return;
+        }
+
+        var contentFields = propertyFields
+            .Where(kvp => !ItemSystemFields.Contains(kvp.Key))
+            .ToDictionary(kvp => kvp.Key, kvp => (object?)kvp.Value);
+
+        // Source-wins: null out property fields not present in serialized data
+        foreach (var fieldName in propItem.Names)
+        {
+            if (!ItemSystemFields.Contains(fieldName) && !contentFields.ContainsKey(fieldName))
+                contentFields[fieldName] = null;
+        }
+
+        if (contentFields.Count == 0)
+            return;
+
+        propItem.DeserializeFrom(contentFields);
+        propItem.Save();
+    }
+
+    // -------------------------------------------------------------------------
+    // GridRow visual property helpers
+    // -------------------------------------------------------------------------
+
+    private static void ApplyGridRowVisualProperties(GridRow row, SerializedGridRow dto)
+    {
+        if (!string.IsNullOrEmpty(dto.Container))
+            row.Container = dto.Container;
+        row.ContainerWidth = dto.ContainerWidth;
+        row.BackgroundImage = dto.BackgroundImage ?? string.Empty;
+        row.ColorSchemeId = dto.ColorSchemeId ?? string.Empty;
+        row.TopSpacing = dto.TopSpacing;
+        row.BottomSpacing = dto.BottomSpacing;
+        row.GapX = dto.GapX;
+        row.GapY = dto.GapY;
+        row.MobileLayout = dto.MobileLayout ?? string.Empty;
+        if (!string.IsNullOrEmpty(dto.VerticalAlignment) &&
+            Enum.TryParse<Dynamicweb.Content.Styles.VerticalAlignment>(dto.VerticalAlignment, true, out var va))
+            row.VerticalAlignment = va;
+        row.FlexibleColumns = dto.FlexibleColumns ?? string.Empty;
+    }
+
+    // -------------------------------------------------------------------------
     // Item field persistence via ItemService
     // -------------------------------------------------------------------------
 
@@ -585,17 +687,12 @@ public class ContentDeserializer
     /// <summary>
     /// Saves Item fields using ItemService.GetItem + DeserializeFrom + Save.
     /// The paragraph.Item[key] = value approach does not persist to the ItemType table.
+    /// Implements source-wins: fields present in the item type definition but absent
+    /// from the serialized YAML are explicitly set to null so stale target data is cleared.
     /// </summary>
     private void SaveItemFields(string? itemType, string itemId, Dictionary<string, object> fields)
     {
-        if (string.IsNullOrEmpty(itemType) || fields.Count == 0)
-            return;
-
-        var contentFields = fields
-            .Where(kvp => !ItemSystemFields.Contains(kvp.Key))
-            .ToDictionary(kvp => kvp.Key, kvp => (object?)kvp.Value);
-
-        if (contentFields.Count == 0)
+        if (string.IsNullOrEmpty(itemType))
             return;
 
         var itemEntry = Services.Items.GetItem(itemType, itemId);
@@ -605,8 +702,95 @@ public class ContentDeserializer
             return;
         }
 
+        var contentFields = fields
+            .Where(kvp => !ItemSystemFields.Contains(kvp.Key))
+            .ToDictionary(kvp => kvp.Key, kvp => (object?)kvp.Value);
+
+        // Source-wins: null out item fields not present in the serialized data.
+        // Without this, stale target values (e.g. invalid button data) survive sync.
+        foreach (var fieldName in itemEntry.Names)
+        {
+            if (!ItemSystemFields.Contains(fieldName) && !contentFields.ContainsKey(fieldName))
+            {
+                contentFields[fieldName] = null;
+            }
+        }
+
+        if (contentFields.Count == 0)
+            return;
+
         itemEntry.DeserializeFrom(contentFields);
         itemEntry.Save();
+    }
+
+    // -------------------------------------------------------------------------
+    // Template validation — warns when deserialized references point to missing files
+    // -------------------------------------------------------------------------
+
+    private void ValidatePageLayout(string? layout)
+    {
+        if (string.IsNullOrEmpty(_filesRoot) || string.IsNullOrEmpty(layout))
+            return;
+
+        var key = $"layout:{layout}";
+        if (_loggedTemplateMissing.Contains(key))
+            return;
+
+        // Layout templates live under Templates/Designs/{design}/{layout}
+        var designsDir = Path.Combine(_filesRoot, "Templates", "Designs");
+        if (!Directory.Exists(designsDir))
+            return;
+
+        foreach (var designDir in Directory.GetDirectories(designsDir))
+        {
+            if (File.Exists(Path.Combine(designDir, layout)))
+                return;
+        }
+
+        _loggedTemplateMissing.Add(key);
+        Log($"WARNING: Page layout template '{layout}' not found in any design folder under {designsDir}");
+    }
+
+    private void ValidateItemType(string? itemType)
+    {
+        if (string.IsNullOrEmpty(_filesRoot) || string.IsNullOrEmpty(itemType))
+            return;
+
+        var key = $"item:{itemType}";
+        if (_loggedTemplateMissing.Contains(key))
+            return;
+
+        var itemFile = Path.Combine(_filesRoot, "System", "Items", $"ItemType_{itemType}.xml");
+        if (File.Exists(itemFile))
+            return;
+
+        _loggedTemplateMissing.Add(key);
+        Log($"WARNING: Item type definition 'ItemType_{itemType}.xml' not found at {itemFile}");
+    }
+
+    private void ValidateGridRowDefinition(string? definitionId)
+    {
+        if (string.IsNullOrEmpty(_filesRoot) || string.IsNullOrEmpty(definitionId))
+            return;
+
+        var key = $"rowdef:{definitionId}";
+        if (_loggedTemplateMissing.Contains(key))
+            return;
+
+        // Row definitions live under Templates/Designs/{design}/Grid/Page/RowDefinitions/{id}.json
+        var designsDir = Path.Combine(_filesRoot, "Templates", "Designs");
+        if (!Directory.Exists(designsDir))
+            return;
+
+        foreach (var designDir in Directory.GetDirectories(designsDir))
+        {
+            var defFile = Path.Combine(designDir, "Grid", "Page", "RowDefinitions", $"{definitionId}.json");
+            if (File.Exists(defFile))
+                return;
+        }
+
+        _loggedTemplateMissing.Add(key);
+        Log($"WARNING: Grid row definition '{definitionId}.json' not found in any design folder under {designsDir}");
     }
 
     // -------------------------------------------------------------------------

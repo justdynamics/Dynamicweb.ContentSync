@@ -36,7 +36,11 @@ public class DeserializeScheduledTask : BaseScheduledTaskAddIn
             foreach (var p in config.Predicates)
                 Log($"  Predicate: name={p.Name}, path={p.Path}, areaId={p.AreaId}");
 
-            var deserializer = new ContentDeserializer(config, log: Log, isDryRun: false);
+            // Derive DW Files root from config path for template validation
+            var filesRoot = Path.GetDirectoryName(configPath);
+            Log($"FilesRoot: {filesRoot}");
+
+            var deserializer = new ContentDeserializer(config, log: Log, isDryRun: false, filesRoot: filesRoot);
             var result = deserializer.Deserialize();
 
             Log(result.Summary);

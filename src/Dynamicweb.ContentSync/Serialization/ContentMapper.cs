@@ -36,6 +36,7 @@ public class ContentMapper
     public SerializedPage MapPage(Page page, List<SerializedGridRow> gridRows, List<SerializedPage> children)
     {
         var fields = ExtractItemFields(page.Item);
+        var propertyFields = ExtractPropertyItemFields(page);
 
         return new SerializedPage
         {
@@ -48,7 +49,11 @@ public class ContentMapper
             IsActive = page.Active,
             ItemType = page.ItemType,
             Layout = page.LayoutTemplate,
+            LayoutApplyToSubPages = page.LayoutApplyToSubPages,
+            IsFolder = page.IsFolder,
+            TreeSection = page.TreeSection,
             Fields = fields,
+            PropertyFields = propertyFields,
             GridRows = gridRows,
             Children = children
         };
@@ -81,6 +86,17 @@ public class ContentMapper
             SortOrder = gridRow.Sort,
             DefinitionId = gridRow.DefinitionId,
             ItemType = gridRow.ItemType,
+            Container = gridRow.Container,
+            ContainerWidth = gridRow.ContainerWidth,
+            BackgroundImage = gridRow.BackgroundImage,
+            ColorSchemeId = gridRow.ColorSchemeId,
+            TopSpacing = gridRow.TopSpacing,
+            BottomSpacing = gridRow.BottomSpacing,
+            GapX = gridRow.GapX,
+            GapY = gridRow.GapY,
+            MobileLayout = gridRow.MobileLayout,
+            VerticalAlignment = gridRow.VerticalAlignment.ToString(),
+            FlexibleColumns = gridRow.FlexibleColumns,
             Fields = fields,
             Columns = columns
         };
@@ -176,6 +192,32 @@ public class ContentMapper
             var value = item[fieldName];
             if (value != null)
                 fields[fieldName] = value;
+        }
+
+        return fields;
+    }
+
+    /// <summary>
+    /// Extracts PropertyItem fields (e.g. Icon, SubmenuType) from a page's PropertyItem.
+    /// These are separate from the page's own Item fields.
+    /// </summary>
+    private static Dictionary<string, object> ExtractPropertyItemFields(Page page)
+    {
+        var fields = new Dictionary<string, object>();
+
+        if (string.IsNullOrEmpty(page.PropertyItemId))
+            return fields;
+
+        var propItem = page.PropertyItem;
+        if (propItem == null)
+            return fields;
+
+        var dict = new Dictionary<string, object?>();
+        propItem.SerializeTo(dict);
+        foreach (var kvp in dict)
+        {
+            if (kvp.Value != null)
+                fields[kvp.Key] = kvp.Value;
         }
 
         return fields;
