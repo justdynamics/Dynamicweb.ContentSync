@@ -123,6 +123,81 @@ public static class ContentTreeBuilder
     }
 
     /// <summary>
+    /// Builds a multi-column tree with 2 columns for testing column round-trip.
+    /// Area "Test Area"
+    ///   Page "Multi-Column Page" (1 grid row, 2 columns)
+    ///     Column 1 (Width=6): 2 paragraphs (SortOrder 1,2)
+    ///     Column 2 (Width=6): 1 paragraph (SortOrder 1)
+    /// </summary>
+    public static SerializedArea BuildMultiColumnTree()
+    {
+        var page = BuildSinglePage("Multi-Column Page") with
+        {
+            SortOrder = 1,
+            IsActive = true,
+            GridRows = new List<SerializedGridRow>
+            {
+                new SerializedGridRow
+                {
+                    Id = Guid.NewGuid(),
+                    SortOrder = 1,
+                    Columns = new List<SerializedGridColumn>
+                    {
+                        new SerializedGridColumn
+                        {
+                            Id = 1,
+                            Width = 6,
+                            Paragraphs = new List<SerializedParagraph>
+                            {
+                                new SerializedParagraph
+                                {
+                                    ParagraphUniqueId = Guid.NewGuid(),
+                                    SortOrder = 1,
+                                    ColumnId = 1,
+                                    ItemType = "ContentModule",
+                                    Fields = new Dictionary<string, object> { ["text"] = "Col1 Para1" }
+                                },
+                                new SerializedParagraph
+                                {
+                                    ParagraphUniqueId = Guid.NewGuid(),
+                                    SortOrder = 2,
+                                    ColumnId = 1,
+                                    ItemType = "ContentModule",
+                                    Fields = new Dictionary<string, object> { ["text"] = "Col1 Para2" }
+                                }
+                            }
+                        },
+                        new SerializedGridColumn
+                        {
+                            Id = 2,
+                            Width = 6,
+                            Paragraphs = new List<SerializedParagraph>
+                            {
+                                new SerializedParagraph
+                                {
+                                    ParagraphUniqueId = Guid.NewGuid(),
+                                    SortOrder = 1,
+                                    ColumnId = 2,
+                                    ItemType = "ImageModule",
+                                    Fields = new Dictionary<string, object> { ["imageUrl"] = "/images/col2.jpg" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        return new SerializedArea
+        {
+            AreaId = Guid.NewGuid(),
+            Name = "Test Area",
+            SortOrder = 1,
+            Pages = new List<SerializedPage> { page }
+        };
+    }
+
+    /// <summary>
     /// Builds a 3-level nested hierarchy:
     /// Area "Test Website"
     ///   Page "Parent" (SortOrder=1)

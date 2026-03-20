@@ -586,6 +586,82 @@ public class FileSystemStoreTests : IDisposable
     }
 
     // -------------------------------------------------------------------------
+    // Multi-column round-trip
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void WriteTree_ReadTree_MultiColumn_PreservesColumnAttribution()
+    {
+        var area = ContentTreeBuilder.BuildMultiColumnTree();
+        _store.WriteTree(area, _tempRoot);
+        var readBack = _store.ReadTree(_tempRoot);
+
+        var page = readBack.Pages.First();
+        var row = page.GridRows.First();
+        Assert.Equal(2, row.Columns.Count);
+
+        var col1 = row.Columns.First(c => c.Id == 1);
+        var col2 = row.Columns.First(c => c.Id == 2);
+
+        Assert.Equal(2, col1.Paragraphs.Count);
+        Assert.Single(col2.Paragraphs);
+
+        // Verify content landed in the right columns
+        Assert.Contains(col1.Paragraphs, p => p.Fields.ContainsKey("text") && p.Fields["text"].ToString() == "Col1 Para1");
+        Assert.Contains(col1.Paragraphs, p => p.Fields.ContainsKey("text") && p.Fields["text"].ToString() == "Col1 Para2");
+        Assert.Contains(col2.Paragraphs, p => p.Fields.ContainsKey("imageUrl"));
+    }
+
+    [Fact]
+    public void WriteTree_MultiColumn_SortOrderCollision_CreatesSeparateFiles()
+    {
+        var area = ContentTreeBuilder.BuildMultiColumnTree();
+        _store.WriteTree(area, _tempRoot);
+
+        var gridRowDir = Path.Combine(_tempRoot, "Test Area", "Multi-Column Page", "grid-row-1");
+        // Both columns have a paragraph with SortOrder=1 — they should produce separate files
+        Assert.True(File.Exists(Path.Combine(gridRowDir, "paragraph-c1-1.yml")),
+            "paragraph-c1-1.yml should exist for column 1 sort 1");
+        Assert.True(File.Exists(Path.Combine(gridRowDir, "paragraph-c2-1.yml")),
+            "paragraph-c2-1.yml should exist for column 2 sort 1");
+        Assert.True(File.Exists(Path.Combine(gridRowDir, "paragraph-c1-2.yml")),
+            "paragraph-c1-2.yml should exist for column 1 sort 2");
+    }
+
+    [Fact]
+    public void ReadTree_BackwardCompat_OldParagraphFiles_DefaultToColumn1()
+    {
+        // Simulate v1.0 file layout: paragraph-{N}.yml without ColumnId in YAML
+        var areaDir = Path.Combine(_tempRoot, "Legacy Area");
+        Directory.CreateDirectory(areaDir);
+        File.WriteAllText(Path.Combine(areaDir, "area.yml"),
+            "areaId: " + Guid.NewGuid() + "\nname: Legacy Area\nsortOrder: 1\n");
+
+        var pageDir = Path.Combine(areaDir, "Legacy Page");
+        Directory.CreateDirectory(pageDir);
+        File.WriteAllText(Path.Combine(pageDir, "page.yml"),
+            "pageUniqueId: " + Guid.NewGuid() + "\nname: Legacy Page\nmenuText: Legacy Page\nurlName: legacy-page\nsortOrder: 1\n");
+
+        var gridDir = Path.Combine(pageDir, "grid-row-1");
+        Directory.CreateDirectory(gridDir);
+        File.WriteAllText(Path.Combine(gridDir, "grid-row.yml"),
+            "id: " + Guid.NewGuid() + "\nsortOrder: 1\ncolumns:\n- id: 1\n  width: 6\n- id: 2\n  width: 6\n");
+
+        // Old-style paragraph file — no columnId field
+        File.WriteAllText(Path.Combine(gridDir, "paragraph-1.yml"),
+            "paragraphUniqueId: " + Guid.NewGuid() + "\nsortOrder: 1\nitemType: ContentModule\n");
+
+        var readBack = _store.ReadTree(_tempRoot);
+        var row = readBack.Pages.First().GridRows.First();
+        var col1 = row.Columns.First(c => c.Id == 1);
+        var col2 = row.Columns.First(c => c.Id == 2);
+
+        // Old paragraphs without ColumnId should default to column 1
+        Assert.Single(col1.Paragraphs);
+        Assert.Empty(col2.Paragraphs);
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 

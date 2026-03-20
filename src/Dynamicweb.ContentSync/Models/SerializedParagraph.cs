@@ -13,4 +13,5 @@ public record SerializedParagraph
     public DateTime? UpdatedDate { get; init; }
     public string? CreatedBy { get; init; }
     public string? UpdatedBy { get; init; }
+    public int? ColumnId { get; init; }
 }
