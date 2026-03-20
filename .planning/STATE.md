@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Robustness
 status: unknown
-stopped_at: Completed 06-02-PLAN.md
-last_updated: "2026-03-20T13:23:46.227Z"
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-03-20T13:25:06.206Z"
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -57,6 +57,7 @@ Plan: 2 of 2 (COMPLETE)
 | Phase 05-integration P01 | 8min | 2 tasks | 3 files |
 | Phase 05-integration P02 | 5min | 1 task | 1 file |
 | Phase 06 P02 | 4min | 2 tasks | 4 files |
+| Phase 06 P01 | 3min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,8 @@ Recent decisions affecting current work:
 - [Phase 05-integration]: Config placed at AppDomain.CurrentDomain.BaseDirectory for FindConfigFile() discovery (third candidate path, reliable across dotnet test CWD variations)
 - [Phase 05-integration]: OPS-01 uses byte-exact file comparison — catches any encoding/line-ending divergence between task and direct ContentSerializer paths
 - [Phase 06]: Console.Error.WriteLine for OutputDirectory warning (non-fatal, does not throw)
+- [Phase 06]: Column-aware filenames paragraph-c{ColumnId}-{SortOrder}.yml prevent SortOrder collisions across columns
+- [Phase 06]: ColumnId is int? (nullable) for backward compatibility - null defaults to first column on read-back
 
 ### Pending Todos
 
@@ -108,5 +111,5 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T13:23:46.221Z
-Stopped at: Completed 06-02-PLAN.md
+Last session: 2026-03-20T13:25:06.201Z
+Stopped at: Completed 06-01-PLAN.md
