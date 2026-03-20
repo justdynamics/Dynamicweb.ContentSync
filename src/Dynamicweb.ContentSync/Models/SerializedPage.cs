@@ -8,6 +8,8 @@ public record SerializedPage
     public required string UrlName { get; init; }
     public required int SortOrder { get; init; }
     public bool IsActive { get; init; }
+    public string? ItemType { get; init; }
+    public string? Layout { get; init; }
     public DateTime? CreatedDate { get; init; }
     public DateTime? UpdatedDate { get; init; }
     public string? CreatedBy { get; init; }

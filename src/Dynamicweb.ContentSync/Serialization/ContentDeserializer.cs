@@ -235,24 +235,17 @@ public class ContentDeserializer
             page.UrlName = dto.UrlName;
             page.Active = dto.IsActive;
             page.Sort = dto.SortOrder;
+            page.ItemType = dto.ItemType ?? string.Empty;
+            page.LayoutTemplate = dto.Layout ?? string.Empty;
             // Do NOT set page.ID — leave 0 for insert path (Pitfall 4)
 
             var saved = Services.Pages.SavePage(page);
             ctx.PageGuidCache[dto.PageUniqueId] = saved.ID;
 
-            // Apply ItemType fields in a post-save update (Pitfall 3: Item may be null before first save)
-            if (dto.Fields.Count > 0)
-            {
-                var refetched = Services.Pages.GetPage(saved.ID);
-                if (refetched?.Item != null)
-                {
-                    foreach (var kvp in dto.Fields)
-                    {
-                        refetched.Item[kvp.Key] = kvp.Value;
-                    }
-                    Services.Pages.SavePage(refetched);
-                }
-            }
+            // Apply ItemType fields via ItemService (page.Item[key] = value does not persist)
+            var refetched = Services.Pages.GetPage(saved.ID);
+            if (refetched != null)
+                SaveItemFields(refetched.ItemType, refetched.ItemId, dto.Fields);
 
             ctx.Created++;
             Log($"CREATED page {dto.PageUniqueId} -> ID={saved.ID}");
@@ -283,24 +276,14 @@ public class ContentDeserializer
             existingPage.UrlName = dto.UrlName;
             existingPage.Active = dto.IsActive;
             existingPage.Sort = dto.SortOrder;
-
-            // Apply ItemType fields with full replace (source-wins)
-            if (existingPage.Item != null)
-            {
-                // Clear fields that exist in DB but not in YAML
-                foreach (var fieldName in existingPage.Item.Names.ToList())
-                {
-                    if (!dto.Fields.ContainsKey(fieldName))
-                        existingPage.Item[fieldName] = null;
-                }
-                // Apply all fields from YAML
-                foreach (var kvp in dto.Fields)
-                {
-                    existingPage.Item[kvp.Key] = kvp.Value;
-                }
-            }
+            existingPage.ItemType = dto.ItemType ?? string.Empty;
+            existingPage.LayoutTemplate = dto.Layout ?? string.Empty;
 
             Services.Pages.SavePage(existingPage);
+
+            // Apply ItemType fields via ItemService (source-wins)
+            SaveItemFields(existingPage.ItemType, existingPage.ItemId, dto.Fields);
+
             ctx.Updated++;
             Log($"UPDATED page {dto.PageUniqueId} (ID={existingId})");
             return existingId;
@@ -368,6 +351,10 @@ public class ContentDeserializer
             var row = new GridRow(pageId);
             row.UniqueId = dto.Id;
             row.Sort = dto.SortOrder;
+            if (!string.IsNullOrEmpty(dto.DefinitionId))
+                row.DefinitionId = dto.DefinitionId;
+            if (!string.IsNullOrEmpty(dto.ItemType))
+                row.ItemType = dto.ItemType;
             // Do NOT set row.ID (insert path)
 
             Services.Grids.SaveGridRow(row);
@@ -378,6 +365,24 @@ public class ContentDeserializer
 
             if (saved == null)
                 throw new InvalidOperationException($"Could not find inserted grid row with GUID {dto.Id}");
+
+            // GridRow.SaveGridRow does NOT auto-create Items (unlike SaveParagraph).
+            // Create Item manually and link it to the grid row.
+            if (!string.IsNullOrEmpty(dto.ItemType) && string.IsNullOrEmpty(saved.ItemId))
+            {
+                var item = new Dynamicweb.Content.Items.Item(dto.ItemType);
+                var itemEntry = Services.Items.SaveItem(item);
+                if (itemEntry != null)
+                {
+                    saved.ItemId = itemEntry.Id;
+                    Services.Grids.SaveGridRow(saved);
+                    SaveItemFields(dto.ItemType, itemEntry.Id, dto.Fields);
+                }
+            }
+            else if (!string.IsNullOrEmpty(saved.ItemId))
+            {
+                SaveItemFields(dto.ItemType, saved.ItemId, dto.Fields);
+            }
 
             var newGridRowId = saved.ID;
             ctx.Created++;
@@ -416,8 +421,17 @@ public class ContentDeserializer
 
             existingRow2.UniqueId = dto.Id;
             existingRow2.Sort = dto.SortOrder;
+            if (!string.IsNullOrEmpty(dto.DefinitionId))
+                existingRow2.DefinitionId = dto.DefinitionId;
+            if (!string.IsNullOrEmpty(dto.ItemType))
+                existingRow2.ItemType = dto.ItemType;
 
             Services.Grids.SaveGridRow(existingRow2);
+
+            // Apply ItemType fields via ItemService
+            if (!string.IsNullOrEmpty(existingRow2.ItemId))
+                SaveItemFields(dto.ItemType, existingRow2.ItemId, dto.Fields);
+
             ctx.Updated++;
             Log($"UPDATED grid row {dto.Id} (ID={existingGridRowId})");
             return existingGridRowId;
@@ -477,24 +491,27 @@ public class ContentDeserializer
             para.Sort = dto.SortOrder;
             para.Header = dto.Header;
             para.ItemType = dto.ItemType;
+            para.ModuleSystemName = dto.ModuleSystemName ?? string.Empty;
+            para.ModuleSettings = dto.ModuleSettings ?? string.Empty;
             // Do NOT set para.ID (insert path)
 
             Services.Paragraphs.SaveParagraph(para);
 
-            // Re-query to get assigned ID and apply ItemType fields (Pitfall 3: Item may be null before save)
+            // Re-query to get assigned ID
             var saved = Services.Paragraphs.GetParagraphsByPageId(pageId)
                 .FirstOrDefault(p => p.UniqueId == dto.ParagraphUniqueId);
 
-            if (saved != null && dto.Fields.Count > 0)
+            // Apply ItemType fields via ItemService using paragraph's ItemId (not paragraph ID)
+            if (saved != null)
             {
-                foreach (var kvp in dto.Fields)
+                SaveItemFields(dto.ItemType, saved.ItemId, dto.Fields);
+
+                // Re-apply header — DW may overwrite ParagraphHeader with the ItemType template default
+                if (saved.Header != dto.Header)
                 {
-                    if (kvp.Key == "Text")
-                        saved.Text = kvp.Value?.ToString();
-                    else if (saved.Item != null)
-                        saved.Item[kvp.Key] = kvp.Value;
+                    saved.Header = dto.Header;
+                    Services.Paragraphs.SaveParagraph(saved);
                 }
-                Services.Paragraphs.SaveParagraph(saved);
             }
 
             ctx.Created++;
@@ -528,31 +545,52 @@ public class ContentDeserializer
             existingForUpdate.Sort = dto.SortOrder;
             existingForUpdate.Header = dto.Header;
             existingForUpdate.ItemType = dto.ItemType;
-
-            // Apply ItemType fields with full replace (source-wins)
-            if (existingForUpdate.Item != null)
-            {
-                // Clear fields that exist in DB but not in YAML
-                foreach (var fieldName in existingForUpdate.Item.Names.ToList())
-                {
-                    if (!dto.Fields.ContainsKey(fieldName))
-                        existingForUpdate.Item[fieldName] = null;
-                }
-            }
-
-            // Write all fields from YAML
-            foreach (var kvp in dto.Fields)
-            {
-                if (kvp.Key == "Text")
-                    existingForUpdate.Text = kvp.Value?.ToString();
-                else if (existingForUpdate.Item != null)
-                    existingForUpdate.Item[kvp.Key] = kvp.Value;
-            }
+            existingForUpdate.ModuleSystemName = dto.ModuleSystemName ?? string.Empty;
+            existingForUpdate.ModuleSettings = dto.ModuleSettings ?? string.Empty;
 
             Services.Paragraphs.SaveParagraph(existingForUpdate);
+
+            // Apply ItemType fields via ItemService (source-wins)
+            SaveItemFields(existingForUpdate.ItemType, existingForUpdate.ItemId, dto.Fields);
             ctx.Updated++;
             Log($"UPDATED paragraph {dto.ParagraphUniqueId} (ID={existingParagraphId})");
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Item field persistence via ItemService
+    // -------------------------------------------------------------------------
+
+    private static readonly HashSet<string> ItemSystemFields = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Id", "ItemInstanceType", "Sort", "GlobalRecordPageGuid"
+    };
+
+    /// <summary>
+    /// Saves Item fields using ItemService.GetItem + DeserializeFrom + Save.
+    /// The paragraph.Item[key] = value approach does not persist to the ItemType table.
+    /// </summary>
+    private void SaveItemFields(string? itemType, string itemId, Dictionary<string, object> fields)
+    {
+        if (string.IsNullOrEmpty(itemType) || fields.Count == 0)
+            return;
+
+        var contentFields = fields
+            .Where(kvp => !ItemSystemFields.Contains(kvp.Key))
+            .ToDictionary(kvp => kvp.Key, kvp => (object?)kvp.Value);
+
+        if (contentFields.Count == 0)
+            return;
+
+        var itemEntry = Services.Items.GetItem(itemType, itemId);
+        if (itemEntry == null)
+        {
+            Log($"WARNING: Could not load ItemEntry for type={itemType}, id={itemId}");
+            return;
+        }
+
+        itemEntry.DeserializeFrom(contentFields);
+        itemEntry.Save();
     }
 
     // -------------------------------------------------------------------------

@@ -46,6 +46,8 @@ public class ContentMapper
             UrlName = page.UrlName ?? string.Empty,
             SortOrder = page.Sort,
             IsActive = page.Active,
+            ItemType = page.ItemType,
+            Layout = page.LayoutTemplate,
             Fields = fields,
             GridRows = gridRows,
             Children = children
@@ -57,10 +59,29 @@ public class ContentMapper
     /// </summary>
     public SerializedGridRow MapGridRow(GridRow gridRow, List<SerializedGridColumn> columns)
     {
+        var fields = new Dictionary<string, object>();
+        if (!string.IsNullOrEmpty(gridRow.ItemType) && !string.IsNullOrEmpty(gridRow.ItemId))
+        {
+            var itemEntry = Services.Items.GetItem(gridRow.ItemType, gridRow.ItemId);
+            if (itemEntry != null)
+            {
+                var dict = new Dictionary<string, object?>();
+                itemEntry.SerializeTo(dict);
+                foreach (var kvp in dict)
+                {
+                    if (kvp.Value != null)
+                        fields[kvp.Key] = kvp.Value;
+                }
+            }
+        }
+
         return new SerializedGridRow
         {
             Id = gridRow.UniqueId,
             SortOrder = gridRow.Sort,
+            DefinitionId = gridRow.DefinitionId,
+            ItemType = gridRow.ItemType,
+            Fields = fields,
             Columns = columns
         };
     }
@@ -101,6 +122,8 @@ public class ContentMapper
             SortOrder = paragraph.Sort,
             ItemType = paragraph.ItemType,
             Header = paragraph.Header,
+            ModuleSystemName = paragraph.ModuleSystemName,
+            ModuleSettings = paragraph.ModuleSettings,
             Fields = fields
         };
     }
