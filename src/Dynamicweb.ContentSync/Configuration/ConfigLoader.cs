@@ -22,6 +22,13 @@ public static class ConfigLoader
 
         Validate(raw);
 
+        if (!Directory.Exists(raw.OutputDirectory))
+        {
+            Console.Error.WriteLine(
+                $"[ContentSync] Warning: OutputDirectory '{raw.OutputDirectory}' does not exist. " +
+                "Serialization will create it; deserialization requires it to exist.");
+        }
+
         // Build the validated model
         return new SyncConfiguration
         {

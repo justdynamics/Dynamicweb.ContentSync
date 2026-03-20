@@ -63,6 +63,17 @@ public class ContentDeserializer
     /// </summary>
     public DeserializeResult Deserialize()
     {
+        if (!Directory.Exists(_configuration.OutputDirectory))
+        {
+            var msg = $"OutputDirectory '{_configuration.OutputDirectory}' does not exist. " +
+                      "Cannot deserialize — run serialization first to create it.";
+            Log(msg);
+            return new DeserializeResult
+            {
+                Errors = new List<string> { msg }
+            };
+        }
+
         var area = _store.ReadTree(_configuration.OutputDirectory);
 
         int totalCreated = 0;
@@ -824,6 +835,32 @@ public class ContentDeserializer
             var newVal = kvp.Value?.ToString();
             if (currentVal != newVal)
                 diffs.Add($"Fields[{kvp.Key}]: '{currentVal}' -> '{newVal}'");
+        }
+
+        // PropertyFields diffs (e.g. Icon, SubmenuType)
+        if (existing.PropertyItem != null && dto.PropertyFields.Count > 0)
+        {
+            var existingPropFields = new Dictionary<string, object?>();
+            existing.PropertyItem.SerializeTo(existingPropFields);
+
+            foreach (var kvp in dto.PropertyFields)
+            {
+                if (ItemSystemFields.Contains(kvp.Key)) continue;
+                existingPropFields.TryGetValue(kvp.Key, out var currentVal);
+                var currentStr = currentVal?.ToString();
+                var newStr = kvp.Value?.ToString();
+                if (currentStr != newStr)
+                    diffs.Add($"PropertyFields[{kvp.Key}]: '{currentStr}' -> '{newStr}'");
+            }
+        }
+        else if (existing.PropertyItem == null && dto.PropertyFields.Count > 0)
+        {
+            // No existing PropertyItem but YAML has property fields — log all as new
+            foreach (var kvp in dto.PropertyFields)
+            {
+                if (ItemSystemFields.Contains(kvp.Key)) continue;
+                diffs.Add($"PropertyFields[{kvp.Key}]: '' -> '{kvp.Value}'");
+            }
         }
 
         if (diffs.Count == 0)
