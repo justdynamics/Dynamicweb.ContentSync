@@ -239,4 +239,80 @@ public class ConfigLoaderTests : IDisposable
 
         Assert.Contains("name", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
+
+    // -------------------------------------------------------------------------
+    // OutputDirectory existence validation
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Load_NonExistentOutputDirectory_EmitsWarning()
+    {
+        var nonExistentDir = Path.Combine(_tempDir, "nonexistent_" + Guid.NewGuid().ToString("N")[..8]);
+        var json = $$"""
+            {
+              "outputDirectory": "{{nonExistentDir.Replace("\\", "\\\\")}}",
+              "predicates": [
+                {
+                  "name": "Test",
+                  "path": "/Test",
+                  "areaId": 1
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var originalError = Console.Error;
+        var errorCapture = new StringWriter();
+        Console.SetError(errorCapture);
+        try
+        {
+            var config = ConfigLoader.Load(path);
+            Assert.Equal(nonExistentDir, config.OutputDirectory);
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
+
+        var errorOutput = errorCapture.ToString();
+        Assert.Contains("does not exist", errorOutput, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(nonExistentDir, errorOutput);
+    }
+
+    [Fact]
+    public void Load_ExistingOutputDirectory_NoWarning()
+    {
+        var existingDir = Path.Combine(_tempDir, "existing_" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(existingDir);
+        var json = $$"""
+            {
+              "outputDirectory": "{{existingDir.Replace("\\", "\\\\")}}",
+              "predicates": [
+                {
+                  "name": "Test",
+                  "path": "/Test",
+                  "areaId": 1
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var originalError = Console.Error;
+        var errorCapture = new StringWriter();
+        Console.SetError(errorCapture);
+        try
+        {
+            var config = ConfigLoader.Load(path);
+            Assert.Equal(existingDir, config.OutputDirectory);
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
+
+        var errorOutput = errorCapture.ToString();
+        Assert.DoesNotContain("does not exist", errorOutput, StringComparison.OrdinalIgnoreCase);
+    }
 }
