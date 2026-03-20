@@ -168,7 +168,7 @@ public class ContentMapper
                 Id = g.Key,
                 Width = 0, // Column width not available from Paragraph; GridRow definition has this
                 Paragraphs = g.OrderBy(p => p.Sort)
-                              .Select(p => MapParagraph(p))
+                              .Select(p => MapParagraph(p) with { ColumnId = g.Key })
                               .ToList()
             })
             .ToList();

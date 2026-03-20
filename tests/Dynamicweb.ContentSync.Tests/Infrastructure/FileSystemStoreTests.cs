@@ -69,8 +69,8 @@ public class FileSystemStoreTests : IDisposable
 
         _store.WriteTree(area, _tempRoot);
 
-        var paragraphFile = Path.Combine(_tempRoot, "Main Website", "Customer Center", "grid-row-1", "paragraph-1.yml");
-        Assert.True(File.Exists(paragraphFile), $"paragraph-1.yml not found at '{paragraphFile}'");
+        var paragraphFile = Path.Combine(_tempRoot, "Main Website", "Customer Center", "grid-row-1", "paragraph-c1-1.yml");
+        Assert.True(File.Exists(paragraphFile), $"paragraph-c1-1.yml not found at '{paragraphFile}'");
     }
 
     [Fact]

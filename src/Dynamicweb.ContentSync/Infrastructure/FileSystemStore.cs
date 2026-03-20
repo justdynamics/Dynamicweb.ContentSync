@@ -81,15 +81,16 @@ public class FileSystemStore : IContentStore
             var gridRowForYaml = gridRow with { Columns = columnsForYaml };
             WriteYamlFile(Path.Combine(gridRowDirectory, "grid-row.yml"), gridRowForYaml, omitEmptyCollections: true);
 
-            // Write paragraphs from all columns
+            // Write paragraphs from all columns — column-aware filenames prevent SortOrder collisions
             foreach (var column in gridRow.Columns)
             {
                 var sortedParagraphs = column.Paragraphs.OrderBy(p => p.SortOrder);
                 foreach (var paragraph in sortedParagraphs)
                 {
-                    var paragraphFileName = $"paragraph-{paragraph.SortOrder}.yml";
+                    var paragraphWithColumn = paragraph with { ColumnId = column.Id };
+                    var paragraphFileName = $"paragraph-c{column.Id}-{paragraph.SortOrder}.yml";
                     var paragraphPath = Path.Combine(gridRowDirectory, paragraphFileName);
-                    var paragraphForYaml = paragraph with { Fields = SortFields(paragraph.Fields) };
+                    var paragraphForYaml = paragraphWithColumn with { Fields = SortFields(paragraphWithColumn.Fields) };
                     WriteYamlFile(paragraphPath, paragraphForYaml);
                 }
             }
@@ -273,20 +274,26 @@ public class FileSystemStore : IContentStore
         List<SerializedGridColumn> columnsWithoutParagraphs,
         List<SerializedParagraph> allParagraphs)
     {
-        // When writing, we flatten paragraphs from all columns into the grid-row folder.
-        // On read-back we can't tell which paragraph belonged to which column without
-        // additional metadata. The simplest correct approach: put all paragraphs into
-        // the first column, preserving the other columns (empty).
-        // This is lossless for single-column layouts (the most common case).
-        // Multi-column paragraph attribution is out of scope for this phase.
+        // Distribute paragraphs to their original columns using ColumnId.
+        // Legacy paragraphs (ColumnId == null) default to the first column.
         if (columnsWithoutParagraphs.Count == 0)
             return new List<SerializedGridColumn>();
 
-        var result = new List<SerializedGridColumn>();
-        result.Add(columnsWithoutParagraphs[0] with { Paragraphs = allParagraphs });
-        for (int i = 1; i < columnsWithoutParagraphs.Count; i++)
-            result.Add(columnsWithoutParagraphs[i]);
+        var columnParagraphs = new Dictionary<int, List<SerializedParagraph>>();
+        foreach (var col in columnsWithoutParagraphs)
+            columnParagraphs[col.Id] = new List<SerializedParagraph>();
 
-        return result;
+        foreach (var para in allParagraphs)
+        {
+            var targetColumnId = para.ColumnId ?? columnsWithoutParagraphs[0].Id;
+            if (columnParagraphs.ContainsKey(targetColumnId))
+                columnParagraphs[targetColumnId].Add(para);
+            else
+                columnParagraphs[columnsWithoutParagraphs[0].Id].Add(para);
+        }
+
+        return columnsWithoutParagraphs
+            .Select(col => col with { Paragraphs = columnParagraphs[col.Id] })
+            .ToList();
     }
 }
