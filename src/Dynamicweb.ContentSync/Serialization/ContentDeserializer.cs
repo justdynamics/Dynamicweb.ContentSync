@@ -370,13 +370,18 @@ public class ContentDeserializer
             // Create Item manually and link it to the grid row.
             if (!string.IsNullOrEmpty(dto.ItemType) && string.IsNullOrEmpty(saved.ItemId))
             {
-                var item = new Dynamicweb.Content.Items.Item(dto.ItemType);
-                var itemEntry = Services.Items.SaveItem(item);
-                if (itemEntry != null)
+                try
                 {
-                    saved.ItemId = itemEntry.Id;
+                    var item = new Dynamicweb.Content.Items.Item(dto.ItemType);
+                    Services.Items.SaveItem(item);
+                    Log($"  GridRow Item created: type={dto.ItemType}, id={item.Id}");
+                    saved.ItemId = item.Id;
                     Services.Grids.SaveGridRow(saved);
-                    SaveItemFields(dto.ItemType, itemEntry.Id, dto.Fields);
+                    SaveItemFields(dto.ItemType, item.Id, dto.Fields);
+                }
+                catch (Exception ex)
+                {
+                    Log($"  WARNING: GridRow Item creation failed: {ex.Message}");
                 }
             }
             else if (!string.IsNullOrEmpty(saved.ItemId))
@@ -506,12 +511,23 @@ public class ContentDeserializer
             {
                 SaveItemFields(dto.ItemType, saved.ItemId, dto.Fields);
 
-                // Re-apply header — DW may overwrite ParagraphHeader with the ItemType template default
-                if (saved.Header != dto.Header)
+                // Re-apply fields that DW may overwrite during HandleItemStructure:
+                // - Header: DW sets it to Item's title (template default)
+                // - ModuleSystemName/ModuleSettings: may not persist on new paragraphs
+                bool needsResave = false;
+                if (saved.Header != (dto.Header ?? string.Empty))
                 {
-                    saved.Header = dto.Header;
-                    Services.Paragraphs.SaveParagraph(saved);
+                    saved.Header = dto.Header ?? string.Empty;
+                    needsResave = true;
                 }
+                if (!string.IsNullOrEmpty(dto.ModuleSystemName) && saved.ModuleSystemName != dto.ModuleSystemName)
+                {
+                    saved.ModuleSystemName = dto.ModuleSystemName;
+                    saved.ModuleSettings = dto.ModuleSettings ?? string.Empty;
+                    needsResave = true;
+                }
+                if (needsResave)
+                    Services.Paragraphs.SaveParagraph(saved);
             }
 
             ctx.Created++;
