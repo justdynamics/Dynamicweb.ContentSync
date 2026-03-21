@@ -61,10 +61,10 @@ Plans:
   2. User can toggle dry-run mode on/off from the settings screen
   3. User can select a logging level and a conflict strategy from dropdown controls on the settings screen
   4. Clicking Save persists all changes to ContentSync.config.json, and reloading the screen shows the saved values
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 08-01: TBD
+- [ ] 08-01-PLAN.md — Config model expansion (DryRun, ConflictStrategy) + full settings screen with dropdowns and validation
 
 ### Phase 9: Predicate Management
 **Goal**: Users can manage content sync predicates (add, view, edit, delete) from the DW admin UI
@@ -110,6 +110,6 @@ Plans:
 | 5. Integration | v1.0 | 2/2 | Complete | 2026-03-19 |
 | 6. Sync Robustness | v1.1 | 2/2 | Complete | 2026-03-20 |
 | 7. Config Infrastructure + Settings Tree Node | v1.2 | 0/2 | Not started | - |
-| 8. Settings Screen | v1.2 | 0/TBD | Not started | - |
+| 8. Settings Screen | v1.2 | 0/1 | Not started | - |
 | 9. Predicate Management | v1.2 | 0/TBD | Not started | - |
 | 10. Context Menu Actions | v1.2 | 0/TBD | Not started | - |
