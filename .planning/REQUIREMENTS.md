@@ -9,9 +9,9 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 
 ### Config Infrastructure
 
-- [ ] **CFG-01**: Config file read/write is concurrency-safe (file locking prevents corruption from simultaneous UI and scheduled task access)
-- [ ] **CFG-02**: Admin UI reflects manual config file edits on next screen load (bidirectional sync)
-- [ ] **CFG-03**: Config file validation produces clear error messages for invalid values
+- [x] **CFG-01**: Config file read/write is concurrency-safe (file locking prevents corruption from simultaneous UI and scheduled task access)
+- [x] **CFG-02**: Admin UI reflects manual config file edits on next screen load (bidirectional sync)
+- [x] **CFG-03**: Config file validation produces clear error messages for invalid values
 
 ### Admin UI Settings
 
@@ -63,9 +63,9 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CFG-01 | Phase 7 | Pending |
-| CFG-02 | Phase 7 | Pending |
-| CFG-03 | Phase 7 | Pending |
+| CFG-01 | Phase 7 | Complete |
+| CFG-02 | Phase 7 | Complete |
+| CFG-03 | Phase 7 | Complete |
 | UI-01 | Phase 7 | Pending |
 | UI-02 | Phase 8 | Pending |
 | UI-03 | Phase 8 | Pending |

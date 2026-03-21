@@ -49,7 +49,7 @@
 **Plans**: 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Config infrastructure: ConfigWriter, ConfigPathResolver, and tests
+- [x] 07-01-PLAN.md — Config infrastructure: ConfigWriter, ConfigPathResolver, and tests
 - [ ] 07-02-PLAN.md — Admin UI tree node registration and skeleton edit screen
 
 ### Phase 8: Settings Screen
