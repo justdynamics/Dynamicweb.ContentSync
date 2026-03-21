@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Dynamicweb.ContentSync</RootNamespace>
     <AssemblyName>Dynamicweb.ContentSync</AssemblyName>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
 
     <!-- NuGet package metadata (INF-01) -->
     <PackageId>Dynamicweb.ContentSync</PackageId>
@@ -21,9 +23,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="wwwroot/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Dynamicweb" Version="10.23.9" />
+    <PackageReference Include="Dynamicweb.Content.UI" Version="10.23.9" />
+    <PackageReference Include="Dynamicweb.CoreUI.Rendering" Version="10.23.9" />
     <PackageReference Include="YamlDotNet" Version="13.7.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="8.0.15" />
   </ItemGroup>
 
 </Project>
