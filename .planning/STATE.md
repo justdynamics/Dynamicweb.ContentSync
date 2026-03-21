@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Robustness
-status: shipped
-stopped_at: v1.1 milestone completed and archived
-last_updated: "2026-03-20T13:34:00.588Z"
+milestone: v1.2
+milestone_name: Admin UI
+status: defining-requirements
+stopped_at: Milestone v1.2 started — defining requirements
+last_updated: "2026-03-21T00:00:00.000Z"
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -19,12 +19,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Developers can reliably move content between DynamicWeb environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** v1.1 shipped — planning next milestone
+**Current focus:** v1.2 Admin UI — defining requirements
 
 ## Current Position
 
-Phase: 06 (sync-robustness) — EXECUTING
-Plan: 2 of 2 (COMPLETE)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-21 — Milestone v1.2 started
 
 ## Performance Metrics
 
@@ -111,5 +113,5 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T13:25:06.201Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-03-21
+Stopped at: Milestone v1.2 started, defining requirements

@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A DynamicWeb AppStore app that serializes and deserializes content trees to/from YAML files on disk, enabling content to be version-controlled and deployed alongside code. The DynamicWeb equivalent of Sitecore Unicorn — replacing manual sync with automated, developer-friendly content synchronization. Tested and verified with cross-environment sync (Swift 2.2 → Swift 2.1) including visual editor rendering, page properties, and grid row styling.
+A DynamicWeb AppStore app that serializes and deserializes content trees to/from YAML files on disk, enabling content to be version-controlled and deployed alongside code. The DynamicWeb equivalent of Sitecore Unicorn — replacing manual sync with automated, developer-friendly content synchronization. Tested and verified with cross-environment sync (Swift 2.2 → Swift 2.1) including visual editor rendering, page properties, and grid row styling. Configurable via DynamicWeb admin UI (Settings > Content > Sync) with query-based predicate management and ad-hoc serialize/deserialize via content tree context menus.
 
 ## Core Value
 
@@ -30,16 +30,20 @@ Developers can reliably move content between DynamicWeb environments through sou
 
 ### Active
 
-- [ ] Tested across multiple content trees beyond Customer Center
-- [ ] Publishing to NuGet registry
+- [ ] Admin UI settings screen at Settings > Content > Sync (OutputDirectory, dry-run, logging, conflict strategy)
+- [ ] Query sub-node for predicate management using DW query expression UI, persisted to config file
+- [ ] Context menu serialize action: serialize page subtree to temp dir, zip, browser download + disk save
+- [ ] Context menu deserialize action: upload zip, extract, deserialize into content tree with target choice (overwrite node or import as subtree)
+- [ ] Config file remains standalone source of truth — admin UI reads/writes it, manual edits still work
 
 ### Out of Scope
 
 - Real-time change detection via Notifications API — v2 feature
-- DynamicWeb admin UI for configuration — v1 uses config file only
-- Media/file serialization (images, documents) — content structure only for v1
-- Partial/incremental sync — v1 does full sync only
+- Media/file serialization (images, documents) — content structure only
+- Partial/incremental sync — full sync only
 - OAuth/licensing — open source app
+- Publishing to NuGet registry — deferred to later milestone
+- Tested across multiple content trees — deferred to later milestone
 
 ## Context
 
@@ -64,7 +68,7 @@ Developers can reliably move content between DynamicWeb environments through sou
 
 - **Tech stack**: .NET 8.0+, DynamicWeb 10.2+ APIs — must be a valid AppStore app
 - **Serialization format**: YAML — chosen for readability and git-friendly diffs
-- **Config approach**: Standalone config file for v1, not DynamicWeb admin UI
+- **Config approach**: Config file as source of truth, admin UI as management layer (both coexist)
 - **Sync model**: Full sync only for v1 (no incremental/delta sync)
 - **Conflict resolution**: Source (files) always wins — no merge logic in v1
 
@@ -85,5 +89,14 @@ Developers can reliably move content between DynamicWeb environments through sou
 | PropertyItem serialization | Page properties (Icon, SubmenuType) are separate from Item fields | ✓ Good |
 | GridRow visual properties | TopSpacing, BottomSpacing, ContainerWidth etc. needed for visual editor | ✓ Good |
 
+## Current Milestone: v1.2 Admin UI
+
+**Goal:** Make ContentSync configurable from the DynamicWeb admin UI with query-based predicate management and ad-hoc serialize/deserialize via context menus.
+
+**Target features:**
+- Settings screen at Settings > Content > Sync for all config options
+- Query sub-node reusing DW Lucene query UI for predicate management
+- Serialize/Deserialize context menu actions on content tree nodes with zip packaging
+
 ---
-*Last updated: 2026-03-20 after Phase 6 completion (v1.1 gap closure)*
+*Last updated: 2026-03-21 after v1.2 milestone start*
