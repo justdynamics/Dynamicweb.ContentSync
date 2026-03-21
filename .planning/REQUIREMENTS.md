@@ -63,35 +63,35 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CFG-01 | — | Pending |
-| CFG-02 | — | Pending |
-| CFG-03 | — | Pending |
-| UI-01 | — | Pending |
-| UI-02 | — | Pending |
-| UI-03 | — | Pending |
-| UI-04 | — | Pending |
-| UI-05 | — | Pending |
-| UI-06 | — | Pending |
-| PRED-01 | — | Pending |
-| PRED-02 | — | Pending |
-| PRED-03 | — | Pending |
-| PRED-04 | — | Pending |
-| PRED-05 | — | Pending |
-| PRED-06 | — | Pending |
-| ACT-01 | — | Pending |
-| ACT-02 | — | Pending |
-| ACT-03 | — | Pending |
-| ACT-04 | — | Pending |
-| ACT-05 | — | Pending |
-| ACT-06 | — | Pending |
-| ACT-07 | — | Pending |
-| ACT-08 | — | Pending |
+| CFG-01 | Phase 7 | Pending |
+| CFG-02 | Phase 7 | Pending |
+| CFG-03 | Phase 7 | Pending |
+| UI-01 | Phase 7 | Pending |
+| UI-02 | Phase 8 | Pending |
+| UI-03 | Phase 8 | Pending |
+| UI-04 | Phase 8 | Pending |
+| UI-05 | Phase 8 | Pending |
+| UI-06 | Phase 8 | Pending |
+| PRED-01 | Phase 9 | Pending |
+| PRED-02 | Phase 9 | Pending |
+| PRED-03 | Phase 9 | Pending |
+| PRED-04 | Phase 9 | Pending |
+| PRED-05 | Phase 9 | Pending |
+| PRED-06 | Phase 9 | Pending |
+| ACT-01 | Phase 10 | Pending |
+| ACT-02 | Phase 10 | Pending |
+| ACT-03 | Phase 10 | Pending |
+| ACT-04 | Phase 10 | Pending |
+| ACT-05 | Phase 10 | Pending |
+| ACT-06 | Phase 10 | Pending |
+| ACT-07 | Phase 10 | Pending |
+| ACT-08 | Phase 10 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 23 total
-- Mapped to phases: 0
-- Unmapped: 23 ⚠️
+- Mapped to phases: 23
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-21*
-*Last updated: 2026-03-21 after initial definition*
+*Last updated: 2026-03-21 after roadmap creation*
