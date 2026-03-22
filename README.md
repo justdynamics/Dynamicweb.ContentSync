@@ -18,7 +18,8 @@ Source Environment                          Target Environment
 
   DynamicWeb DB                               DynamicWeb DB
        |                                           ^
-       | Serialize (scheduled task)                | Deserialize (scheduled task)
+       | Serialize                                 | Deserialize
+       | (scheduled task or API)                   | (API call after deploy)
        v                                           |
   Files/System/ContentSync/                   Files/System/ContentSync/
        SerializeRoot/                              SerializeRoot/
@@ -35,10 +36,27 @@ Source Environment                          Target Environment
 **Steps:**
 
 1. **Configure predicates** in the admin UI (Settings > Content > Sync > Predicates) pointing to the content trees you want to sync
-2. **Run the Serialize scheduled task** — content matching predicates is written as YAML to `SerializeRoot/`
+2. **Serialize** — run via scheduled task, Management API, or DW CLI:
+   ```bash
+   # Management API
+   curl -X POST https://source.example.com/Admin/Api/ContentSyncSerialize \
+     -H "Authorization: Bearer CLD.your-api-key"
+
+   # DW CLI
+   dw command ContentSyncSerialize
+   ```
 3. **Commit the YAML files** to your Git repository
-4. **Deploy to target environment** — the YAML files arrive via Git pull/deploy
-5. **Run the Deserialize scheduled task** — YAML is read and applied to the target database
+4. **Deploy to target environment** — the YAML files arrive via Git pull/deploy pipeline
+5. **Deserialize** — trigger immediately after deploy via API or CLI (no waiting for scheduled tasks):
+   ```bash
+   # Management API
+   curl -X POST https://target.example.com/Admin/Api/ContentSyncDeserialize \
+     -H "Authorization: Bearer CLD.your-api-key"
+
+   # DW CLI
+   dw env production
+   dw command ContentSyncDeserialize
+   ```
 6. Content is matched by **PageUniqueId (GUID)** — existing pages are updated, new pages are created
 
 ### Ad-Hoc Flow: Single Page Export/Import
