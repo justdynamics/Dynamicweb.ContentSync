@@ -45,8 +45,8 @@ public static class ConfigLoader
         if (string.IsNullOrWhiteSpace(raw.OutputDirectory))
             throw new InvalidOperationException("Configuration is invalid: 'outputDirectory' is required and must not be empty.");
 
-        if (raw.Predicates is null || raw.Predicates.Count == 0)
-            throw new InvalidOperationException("Configuration is invalid: 'predicates' is required and must contain at least one entry.");
+        if (raw.Predicates is null)
+            raw.Predicates = new List<RawPredicateDefinition>();
 
         for (var i = 0; i < raw.Predicates.Count; i++)
         {
@@ -74,6 +74,7 @@ public static class ConfigLoader
         Name = raw.Name!,
         Path = raw.Path!,
         AreaId = raw.AreaId,
+        PageId = raw.PageId,
         Excludes = raw.Excludes ?? new List<string>()
     };
 
@@ -92,6 +93,7 @@ public static class ConfigLoader
         public string? Name { get; set; }
         public string? Path { get; set; }
         public int AreaId { get; set; }
+        public int PageId { get; set; }
         public List<string>? Excludes { get; set; }
     }
 }
