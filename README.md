@@ -158,6 +158,65 @@ The Sync node appears under **Settings > Content** with a Predicates sub-node.
 
 The **"Serialize subtree"** action appears in the Actions menu on every page edit screen, alongside Preview and Paragraphs.
 
+## API Commands & CI/CD Integration
+
+ContentSync exposes two Management API commands for immediate serialization and deserialization. These enable automated workflows triggered by CI/CD pipelines, Git hooks, or the [DynamicWeb CLI](https://github.com/dynamicweb/CLI).
+
+### Available Commands
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/Admin/Api/ContentSyncSerialize` | POST | Serialize all predicate-matched content to `SerializeRoot/` |
+| `/Admin/Api/ContentSyncDeserialize` | POST | Deserialize YAML from `SerializeRoot/` into the database |
+
+Authentication: `Authorization: Bearer {API-Key}` (Management API key)
+
+### Example: curl
+
+```bash
+# Serialize content on source environment
+curl -X POST https://source.example.com/Admin/Api/ContentSyncSerialize \
+  -H "Authorization: Bearer CLD.your-api-key-here"
+
+# Deserialize content on target environment (after YAML files are deployed)
+curl -X POST https://target.example.com/Admin/Api/ContentSyncDeserialize \
+  -H "Authorization: Bearer CLD.your-api-key-here"
+```
+
+### Example: DynamicWeb CLI
+
+```bash
+# Using the DW CLI (https://github.com/dynamicweb/CLI)
+dw env production
+dw command ContentSyncDeserialize
+```
+
+### Example: GitHub Actions
+
+```yaml
+- name: Deploy content
+  run: |
+    # After deploying code + YAML files to the target environment
+    curl -X POST ${{ secrets.DW_HOST }}/Admin/Api/ContentSyncDeserialize \
+      -H "Authorization: Bearer ${{ secrets.DW_API_KEY }}"
+```
+
+### Git-Based Workflow
+
+The typical CI/CD flow for content synchronization:
+
+```
+Developer commits YAML files
+        ↓
+Git push → CI/CD pipeline
+        ↓
+Deploy to target (code + YAML files land in SerializeRoot/)
+        ↓
+POST /Admin/Api/ContentSyncDeserialize
+        ↓
+Content is immediately applied — no scheduled task delay
+```
+
 ## Installation
 
 1. Build the project:
