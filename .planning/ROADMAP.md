@@ -92,11 +92,12 @@ Plans:
   3. The serialize zip is also saved to a configurable location on disk
   4. Clicking Deserialize prompts for a zip upload, lets the user choose overwrite-node or import-as-subtree, and applies the content to the tree
   5. Context menu actions reuse the existing ContentSerializer/ContentDeserializer without duplicating serialization logic
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 10-01: TBD
-- [ ] 10-02: TBD
+- [ ] 10-01-PLAN.md — ExportDirectory config field + SerializeSubtreeCommand (zip creation, download, disk copy)
+- [ ] 10-02-PLAN.md — DeserializePromptScreen (file upload + mode select modal) + DeserializeSubtreeCommand
+- [ ] 10-03-PLAN.md — ContentSyncPageListInjector (context menu wiring) + human verification
 
 ## Progress
 
@@ -113,4 +114,4 @@ Plans:
 | 7. Config Infrastructure + Settings Tree Node | v1.2 | 0/2 | Not started | - |
 | 8. Settings Screen | v1.2 | 0/1 | Not started | - |
 | 9. Predicate Management | v1.2 | 0/2 | Not started | - |
-| 10. Context Menu Actions | v1.2 | 0/TBD | Not started | - |
+| 10. Context Menu Actions | v1.2 | 0/3 | Not started | - |
