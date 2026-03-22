@@ -17,6 +17,7 @@ public sealed class SyncSettingsEditScreen : EditScreenBase<SyncSettingsModel>
             new("Content Sync",
             [
                 EditorFor(m => m.OutputDirectory),
+                EditorFor(m => m.ExportDirectory),
                 EditorFor(m => m.LogLevel),
                 EditorFor(m => m.DryRun),
                 EditorFor(m => m.ConflictStrategy)

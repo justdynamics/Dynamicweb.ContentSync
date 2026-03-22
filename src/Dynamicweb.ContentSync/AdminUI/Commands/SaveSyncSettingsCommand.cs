@@ -42,6 +42,7 @@ public sealed class SaveSyncSettingsCommand : CommandBase<SyncSettingsModel>
             var updatedConfig = new SyncConfiguration
             {
                 OutputDirectory = Model.OutputDirectory,
+                ExportDirectory = Model.ExportDirectory,
                 LogLevel = Model.LogLevel,
                 DryRun = Model.DryRun,
                 ConflictStrategy = conflictStrategy,

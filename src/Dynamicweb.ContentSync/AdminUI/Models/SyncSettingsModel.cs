@@ -10,6 +10,9 @@ public sealed class SyncSettingsModel : DataViewModelBase
     [Required(ErrorMessage = "Output Directory is required")]
     public string OutputDirectory { get; set; } = string.Empty;
 
+    [ConfigurableProperty("Export Directory", explanation: "When set, ad-hoc serialize also saves a copy of the zip to this path (relative to Files/System). Leave empty to skip.")]
+    public string ExportDirectory { get; set; } = string.Empty;
+
     [ConfigurableProperty("Log Level", explanation: "Logging verbosity")]
     public string LogLevel { get; set; } = "info";
 
