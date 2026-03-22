@@ -6,12 +6,9 @@ namespace Dynamicweb.ContentSync.AdminUI.Models;
 
 public sealed class SyncSettingsModel : DataViewModelBase
 {
-    [ConfigurableProperty("Output Directory", explanation: "Root path for serialized YAML files (relative to Files/System)")]
+    [ConfigurableProperty("Output Directory", explanation: "Top-level folder relative to Files/System. Subfolders are managed automatically: serializeRoot (YAML files), upload (zip imports), download (zip exports).")]
     [Required(ErrorMessage = "Output Directory is required")]
     public string OutputDirectory { get; set; } = string.Empty;
-
-    [ConfigurableProperty("Export Directory", explanation: "When set, ad-hoc serialize also saves a copy of the zip to this path (relative to Files/System). Leave empty to skip.")]
-    public string ExportDirectory { get; set; } = string.Empty;
 
     [ConfigurableProperty("Log Level", explanation: "Logging verbosity")]
     public string LogLevel { get; set; } = "info";

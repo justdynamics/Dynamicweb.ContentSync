@@ -33,7 +33,6 @@ public static class ConfigLoader
         return new SyncConfiguration
         {
             OutputDirectory = raw.OutputDirectory!,
-            ExportDirectory = raw.ExportDirectory ?? string.Empty,
             LogLevel = string.IsNullOrWhiteSpace(raw.LogLevel) ? "info" : raw.LogLevel,
             DryRun = raw.DryRun ?? false,
             ConflictStrategy = ParseConflictStrategy(raw.ConflictStrategy),
@@ -83,7 +82,7 @@ public static class ConfigLoader
     private sealed class RawSyncConfiguration
     {
         public string? OutputDirectory { get; set; }
-        public string? ExportDirectory { get; set; }
+        // ExportDirectory removed — subfolders derived from OutputDirectory
         public string? LogLevel { get; set; }
         public bool? DryRun { get; set; }
         public string? ConflictStrategy { get; set; }

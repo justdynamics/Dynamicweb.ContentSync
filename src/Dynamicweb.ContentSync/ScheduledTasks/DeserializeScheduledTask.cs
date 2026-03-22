@@ -9,13 +9,13 @@ namespace Dynamicweb.ContentSync.ScheduledTasks;
 
 [AddInName("ContentSync.Deserialize")]
 [AddInLabel("ContentSync - Deserialize")]
-[AddInDescription("Deserializes YAML content files to DynamicWeb database. Default: folder mode (reads from OutputDirectory). Set Zip File to override with a zip-based import.")]
+[AddInDescription("Deserializes YAML content files to DynamicWeb database. Default: folder mode (reads from serializeRoot). Set Zip File to a filename in the upload folder for zip-based import.")]
 public class DeserializeScheduledTask : BaseScheduledTaskAddIn
 {
     private string? _logFile;
 
-    [AddInParameter("Zip File"), AddInParameterEditor(typeof(TextParameterEditor), "inputClass=NewUIinput;infoText=Optional. Path to a .zip file (relative to Files/). Leave empty for folder mode.;")]
-    public string ZipFilePath { get; set; } = string.Empty;
+    [AddInParameter("Zip File"), AddInParameterEditor(typeof(TextParameterEditor), "inputClass=NewUIinput;infoText=Optional. Filename of a .zip in the upload folder (e.g. import.zip). Leave empty for folder mode.;")]
+    public string ZipFileName { get; set; } = string.Empty;
 
     public override bool Run()
     {
@@ -42,22 +42,21 @@ public class DeserializeScheduledTask : BaseScheduledTaskAddIn
             var filesRoot = Path.GetDirectoryName(configPath);
             Log($"FilesRoot: {filesRoot}");
 
-            bool isZipMode = !string.IsNullOrWhiteSpace(ZipFilePath);
+            bool isZipMode = !string.IsNullOrWhiteSpace(ZipFileName);
             string deserializeDir;
             string? tempExtractDir = null;
 
             if (isZipMode)
             {
-                // Zip mode: resolve path, extract to temp, deserialize from there
-                var zipPath = Path.IsPathRooted(ZipFilePath)
-                    ? ZipFilePath
-                    : Path.GetFullPath(Path.Combine(filesRoot ?? ".", ZipFilePath));
+                // Zip mode: resolve filename within the upload subfolder
+                var uploadDir = Path.GetFullPath(Path.Combine(filesRoot ?? ".", "System", config.UploadDir));
+                var zipPath = Path.Combine(uploadDir, ZipFileName);
 
                 Log($"Zip mode: {zipPath}");
 
                 if (!File.Exists(zipPath))
                 {
-                    Log($"ERROR: Zip file not found: {zipPath}");
+                    Log($"ERROR: Zip file not found: {zipPath} (looked in upload folder: {uploadDir})");
                     return false;
                 }
 
@@ -81,8 +80,8 @@ public class DeserializeScheduledTask : BaseScheduledTaskAddIn
             }
             else
             {
-                // Folder mode (default): deserialize from OutputDirectory
-                deserializeDir = config.OutputDirectory;
+                // Folder mode (default): deserialize from serializeRoot subfolder
+                deserializeDir = config.SerializeRoot;
                 Log($"Folder mode: deserializing from {deserializeDir}");
             }
 

@@ -32,16 +32,18 @@ public class SerializeScheduledTask : BaseScheduledTaskAddIn
             var config = ConfigLoader.Load(configPath);
 
             Log($"OutputDirectory: {config.OutputDirectory}");
+            Log($"SerializeRoot: {config.SerializeRoot}");
             Log($"Predicates: {config.Predicates.Count}");
             foreach (var p in config.Predicates)
                 Log($"  Predicate: name={p.Name}, path={p.Path}, areaId={p.AreaId}");
 
-            // Ensure output directory exists
-            var outputDir = Path.GetFullPath(config.OutputDirectory);
+            // Use serializeRoot subfolder for YAML output
+            var serializeConfig = config with { OutputDirectory = config.SerializeRoot };
+            var outputDir = Path.GetFullPath(serializeConfig.OutputDirectory);
             Log($"Resolved output path: {outputDir}");
             Directory.CreateDirectory(outputDir);
 
-            var serializer = new ContentSerializer(config, log: Log);
+            var serializer = new ContentSerializer(serializeConfig, log: Log);
             serializer.Serialize();
 
             // Report what was written

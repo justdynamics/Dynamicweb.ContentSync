@@ -76,8 +76,8 @@ public sealed class SerializeSubtreeCommand : CommandBase
 
                 ZipFile.CreateFromDirectory(tempDir, zipPath);
 
-                // 6. Copy to ExportDirectory if configured (per D-04)
-                CopyToExportDirectory(zipPath, zipFileName);
+                // 6. Copy to download subfolder
+                CopyToDownloadDir(zipPath, zipFileName);
 
                 // 7. Clean up temp serialization directory (zip is separate)
                 try { Directory.Delete(tempDir, recursive: true); } catch { /* best effort */ }
@@ -128,29 +128,26 @@ public sealed class SerializeSubtreeCommand : CommandBase
         return "/" + string.Join("/", segments);
     }
 
-    private static void CopyToExportDirectory(string zipPath, string zipFileName)
+    private static void CopyToDownloadDir(string zipPath, string zipFileName)
     {
         try
         {
             var configPath = ConfigPathResolver.FindOrCreateConfigFile();
             var config = ConfigLoader.Load(configPath);
 
-            if (string.IsNullOrWhiteSpace(config.ExportDirectory))
-                return;
-
-            // Resolve ExportDirectory relative to Files/System (same as OutputDirectory convention)
+            // Resolve download subfolder relative to Files/System
             var filesDir = Path.GetDirectoryName(configPath)!;
             var systemDir = Path.Combine(filesDir, "System");
-            var resolvedExportDir = Path.GetFullPath(
-                Path.Combine(systemDir, config.ExportDirectory.TrimStart('\\', '/')));
+            var downloadDir = Path.GetFullPath(
+                Path.Combine(systemDir, config.DownloadDir.TrimStart('\\', '/')));
 
-            Directory.CreateDirectory(resolvedExportDir);
-            var destPath = Path.Combine(resolvedExportDir, zipFileName);
+            Directory.CreateDirectory(downloadDir);
+            var destPath = Path.Combine(downloadDir, zipFileName);
             File.Copy(zipPath, destPath, overwrite: true);
         }
         catch
         {
-            // Export copy is best-effort -- don't fail the download
+            // Download copy is best-effort -- don't fail the browser download
         }
     }
 
