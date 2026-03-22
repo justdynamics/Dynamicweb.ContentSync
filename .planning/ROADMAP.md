@@ -33,7 +33,7 @@
 - [ ] **Phase 7: Config Infrastructure + Settings Tree Node** - Concurrency-safe config read/write and nav node registration in DW admin tree
 - [ ] **Phase 8: Settings Screen** - Admin UI for editing OutputDirectory, dry-run, logging level, and conflict strategy
 - [ ] **Phase 9: Predicate Management** - CRUD list/edit screens for predicate configuration
-- [ ] **Phase 10: Context Menu Actions** - Serialize-to-zip and deserialize-from-zip on content tree page nodes
+- [x] **Phase 10: Context Menu Actions** - Serialize-to-zip and deserialize-from-zip on content tree page nodes (completed 2026-03-22)
 
 ## Phase Details
 
@@ -114,4 +114,4 @@ Plans:
 | 7. Config Infrastructure + Settings Tree Node | v1.2 | 0/2 | Not started | - |
 | 8. Settings Screen | v1.2 | 0/1 | Not started | - |
 | 9. Predicate Management | v1.2 | 0/2 | Not started | - |
-| 10. Context Menu Actions | v1.2 | 2/3 | In Progress|  |
+| 10. Context Menu Actions | v1.2 | 2/3 | Complete    | 2026-03-22 |
