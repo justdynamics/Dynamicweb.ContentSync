@@ -34,13 +34,13 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 ### Context Menu Actions
 
 - [ ] **ACT-01**: Serialize action appears in page context menu in the content tree
-- [ ] **ACT-02**: Serialize creates a zip of the page subtree at a temporary location (separate from main serialization tree)
-- [ ] **ACT-03**: Serialize zip is available for browser download
-- [ ] **ACT-04**: Serialize zip is also saved to a configurable location on disk
+- [x] **ACT-02**: Serialize creates a zip of the page subtree at a temporary location (separate from main serialization tree)
+- [x] **ACT-03**: Serialize zip is available for browser download
+- [x] **ACT-04**: Serialize zip is also saved to a configurable location on disk
 - [ ] **ACT-05**: Deserialize action appears in page context menu in the content tree
 - [ ] **ACT-06**: Deserialize prompts user to upload a zip file
 - [ ] **ACT-07**: Deserialize lets user choose: overwrite clicked node as parent, or import zip as subtree
-- [ ] **ACT-08**: Context menu actions reuse existing ContentSerializer/ContentDeserializer logic (no code duplication)
+- [x] **ACT-08**: Context menu actions reuse existing ContentSerializer/ContentDeserializer logic (no code duplication)
 
 ## Future Requirements
 
@@ -79,13 +79,13 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 | PRED-05 | Phase 9 | Complete |
 | PRED-06 | Phase 9 | Complete |
 | ACT-01 | Phase 10 | Pending |
-| ACT-02 | Phase 10 | Pending |
-| ACT-03 | Phase 10 | Pending |
-| ACT-04 | Phase 10 | Pending |
+| ACT-02 | Phase 10 | Complete |
+| ACT-03 | Phase 10 | Complete |
+| ACT-04 | Phase 10 | Complete |
 | ACT-05 | Phase 10 | Pending |
 | ACT-06 | Phase 10 | Pending |
 | ACT-07 | Phase 10 | Pending |
-| ACT-08 | Phase 10 | Pending |
+| ACT-08 | Phase 10 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 23 total
