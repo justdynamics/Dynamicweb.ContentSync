@@ -16,6 +16,7 @@ public class ContentSerializer
     private readonly IContentStore _store;
     private readonly ReferenceResolver _referenceResolver;
     private readonly ContentMapper _mapper;
+    private readonly PermissionMapper _permissionMapper;
     private readonly ContentPredicateSet _predicateSet;
     private readonly Action<string>? _log;
 
@@ -25,6 +26,7 @@ public class ContentSerializer
         _store = store ?? new FileSystemStore();
         _referenceResolver = new ReferenceResolver();
         _mapper = new ContentMapper(_referenceResolver);
+        _permissionMapper = new PermissionMapper(log);
         _predicateSet = new ContentPredicateSet(configuration);
         _log = log;
     }
@@ -139,7 +141,8 @@ public class ContentSerializer
                 serializedChildren.Add(serializedChild);
         }
 
-        return _mapper.MapPage(page, serializedGridRows, serializedChildren);
+        var permissions = _permissionMapper.MapPermissions(page.ID);
+        return _mapper.MapPage(page, serializedGridRows, serializedChildren, permissions);
     }
 
     private static void CountItems(IEnumerable<SerializedPage> pages, ref int pageCount, ref int gridRowCount, ref int paragraphCount)

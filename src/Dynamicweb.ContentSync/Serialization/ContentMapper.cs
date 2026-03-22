@@ -33,7 +33,7 @@ public class ContentMapper
     /// <summary>
     /// Maps a DW Page to a SerializedPage DTO.
     /// </summary>
-    public SerializedPage MapPage(Page page, List<SerializedGridRow> gridRows, List<SerializedPage> children)
+    public SerializedPage MapPage(Page page, List<SerializedGridRow> gridRows, List<SerializedPage> children, List<SerializedPermission> permissions)
     {
         var fields = ExtractItemFields(page.Item);
         var propertyFields = ExtractPropertyItemFields(page);
@@ -54,6 +54,7 @@ public class ContentMapper
             TreeSection = page.TreeSection,
             Fields = fields,
             PropertyFields = propertyFields,
+            Permissions = permissions,
             GridRows = gridRows,
             Children = children
         };

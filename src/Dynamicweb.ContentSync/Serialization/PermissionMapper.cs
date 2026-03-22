@@ -83,7 +83,7 @@ public class PermissionMapper
                 string ownerName = ownerId;
                 if (int.TryParse(ownerId, out var userId))
                 {
-                    var user = User.GetUserByID(userId);
+                    var user = UserManagementServices.Users.GetUserById(userId);
                     if (user != null)
                     {
                         ownerName = user.Name ?? ownerId;
