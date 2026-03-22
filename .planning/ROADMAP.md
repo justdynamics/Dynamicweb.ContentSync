@@ -76,10 +76,11 @@ Plans:
   3. User can add a new predicate, edit an existing predicate, and delete a predicate from the list screen
   4. All predicate changes (add, edit, delete) persist to ContentSync.config.json and survive a screen reload
   5. Predicates added via the admin UI are respected by the next scheduled task serialization run
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 09-01: TBD
+- [ ] 09-01-PLAN.md — Predicate data layer: models, queries, commands, ConfigLoader zero-predicates fix, and tests
+- [ ] 09-02-PLAN.md — List screen, edit screen with page/area selectors, tree node wiring, and breadcrumb
 
 ### Phase 10: Context Menu Actions
 **Goal**: Users can serialize page subtrees to downloadable zips and deserialize uploaded zips into the content tree via right-click context menu
@@ -111,5 +112,5 @@ Plans:
 | 6. Sync Robustness | v1.1 | 2/2 | Complete | 2026-03-20 |
 | 7. Config Infrastructure + Settings Tree Node | v1.2 | 0/2 | Not started | - |
 | 8. Settings Screen | v1.2 | 0/1 | Not started | - |
-| 9. Predicate Management | v1.2 | 0/TBD | Not started | - |
+| 9. Predicate Management | v1.2 | 0/2 | Not started | - |
 | 10. Context Menu Actions | v1.2 | 0/TBD | Not started | - |
