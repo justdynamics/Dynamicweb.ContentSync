@@ -79,14 +79,14 @@ public class PermissionMapper
             }
             else
             {
-                // Group: look up name via AccessUser
+                // Group: look up name via UserGroups service
                 string ownerName = ownerId;
-                if (int.TryParse(ownerId, out var userId))
+                if (int.TryParse(ownerId, out var groupId))
                 {
-                    var user = UserManagementServices.Users.GetUserById(userId);
-                    if (user != null)
+                    var group = UserManagementServices.UserGroups.GetGroupById(groupId);
+                    if (group != null)
                     {
-                        ownerName = user.Name ?? ownerId;
+                        ownerName = !string.IsNullOrEmpty(group.Name) ? group.Name : ownerId;
                         Log($"Resolved group ID {ownerId} to name '{ownerName}'");
                     }
                     else
