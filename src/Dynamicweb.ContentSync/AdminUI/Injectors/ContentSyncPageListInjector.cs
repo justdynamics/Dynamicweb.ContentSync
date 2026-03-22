@@ -11,13 +11,17 @@ using Dynamicweb.CoreUI.Screens;
 namespace Dynamicweb.ContentSync.AdminUI.Injectors;
 
 /// <summary>
-/// Injects "Content Sync" context menu actions (Serialize and Deserialize) into every page row
-/// in the DW content tree's PageListScreen. Auto-discovered by DW's AddInManager.
+/// Injects "Content Sync" actions (Serialize and Deserialize) into the page edit screen's
+/// Actions menu (alongside Preview, Paragraphs, etc.). Auto-discovered by DW's AddInManager.
 /// </summary>
-public sealed class ContentSyncPageListInjector : ListScreenInjector<PageListScreen, PageDataModel>
+public sealed class ContentSyncPageEditInjector : EditScreenInjector<PageEditScreen, PageDataModel>
 {
-    public override IEnumerable<ActionGroup>? GetListItemActions(PageDataModel model)
+    public override IEnumerable<ActionGroup>? GetScreenActions()
     {
+        var model = Screen?.Model;
+        if (model == null || model.Id <= 0)
+            return null;
+
         var pageId = model.Id;
         var areaId = model.AreaId;
 
