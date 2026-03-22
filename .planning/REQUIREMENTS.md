@@ -107,22 +107,21 @@ Requirements for permissions milestone. Each maps to roadmap phases.
 | ACT-06 | Phase 10 | Complete |
 | ACT-07 | Phase 10 | Complete |
 | ACT-08 | Phase 10 | Complete |
-
-| PERM-01 | TBD | Pending |
-| PERM-02 | TBD | Pending |
-| PERM-03 | TBD | Pending |
-| PERM-04 | TBD | Pending |
-| PERM-05 | TBD | Pending |
-| PERM-06 | TBD | Pending |
-| PERM-07 | TBD | Pending |
-| PERM-08 | TBD | Pending |
+| PERM-01 | Phase 11 | Pending |
+| PERM-02 | Phase 11 | Pending |
+| PERM-03 | Phase 11 | Pending |
+| PERM-04 | Phase 12 | Pending |
+| PERM-05 | Phase 12 | Pending |
+| PERM-06 | Phase 12 | Pending |
+| PERM-07 | Phase 12 | Pending |
+| PERM-08 | Phase 12 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 23 total (all complete)
 - v1.3 requirements: 8 total
-- Mapped to phases: 0
-- Unmapped: 8
+- Mapped to phases: 8
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-21*
-*Last updated: 2026-03-22 after v1.3 requirements definition*
+*Last updated: 2026-03-22 after v1.3 roadmap creation*

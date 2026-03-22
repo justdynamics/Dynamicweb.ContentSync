@@ -5,6 +5,7 @@
 - [x] **v1.0 MVP** - Phases 1-5 (shipped 2026-03-20) - [Archive](milestones/v1.0-ROADMAP.md)
 - [x] **v1.1 Robustness** - Phase 6 (shipped 2026-03-20) - [Archive](milestones/v1.1-ROADMAP.md)
 - [ ] **v1.2 Admin UI** - Phases 7-10 (in progress)
+- [ ] **v1.3 Permissions** - Phases 11-12
 
 ## Phases
 
@@ -34,6 +35,13 @@
 - [ ] **Phase 8: Settings Screen** - Admin UI for editing OutputDirectory, dry-run, logging level, and conflict strategy
 - [ ] **Phase 9: Predicate Management** - CRUD list/edit screens for predicate configuration
 - [x] **Phase 10: Context Menu Actions** - Serialize-to-zip and deserialize-from-zip on content tree page nodes (completed 2026-03-22)
+
+### v1.3 Permissions
+
+**Milestone Goal:** Serialize and deserialize page-level permissions so that access controls are preserved across environments, with a safety fallback for missing user groups.
+
+- [ ] **Phase 11: Permission Serialization** - Extend ContentMapper/SerializedPage to include explicit page permissions in YAML
+- [ ] **Phase 12: Permission Deserialization + Docs** - Extend ContentDeserializer to restore permissions with group-name resolution and safety fallback
 
 ## Phase Details
 
@@ -99,9 +107,30 @@ Plans:
 - [x] 10-02-PLAN.md — DeserializePromptScreen (file upload + mode select modal) + DeserializeSubtreeCommand
 - [ ] 10-03-PLAN.md — ContentSyncPageListInjector (context menu wiring) + human verification
 
+### Phase 11: Permission Serialization
+**Goal**: Explicit page permissions (roles and user groups) are captured in YAML alongside page data so permission state is version-controlled
+**Depends on**: Phase 10 (v1.2 codebase)
+**Requirements**: PERM-01, PERM-02, PERM-03
+**Success Criteria** (what must be TRUE):
+  1. A page with explicit permissions serializes a permissions section in its YAML file listing each role/group with its permission level
+  2. Roles are stored by name (e.g., "Anonymous", "AuthenticatedFrontend") and user groups are stored by group name — no numeric IDs in the YAML
+  3. A page with no explicit permissions (inheriting from parent) produces no permissions section in its YAML file
+**Plans**: TBD
+
+### Phase 12: Permission Deserialization + Docs
+**Goal**: Permissions from YAML are restored on the target environment with name-based resolution and a safety fallback that prevents accidental public exposure
+**Depends on**: Phase 11
+**Requirements**: PERM-04, PERM-05, PERM-06, PERM-07, PERM-08
+**Success Criteria** (what must be TRUE):
+  1. Role-based permissions (Anonymous, AuthenticatedFrontend, etc.) are restored on deserialize by matching role name on the target
+  2. User group permissions are resolved by group name on the target environment and applied with the correct permission level
+  3. When a referenced user group does not exist on the target, Anonymous access is set to None (deny) and the event is logged as a safety fallback
+  4. Deserialization logs every permission action: applied, skipped, and safety fallback triggered
+  5. README documents the permission handling behavior including the safety fallback for missing groups
+
 ## Progress
 
-**Execution Order:** Phases 7 -> 8 -> 9 -> 10
+**Execution Order:** Phases 7 -> 8 -> 9 -> 10 -> 11 -> 12
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -114,4 +143,6 @@ Plans:
 | 7. Config Infrastructure + Settings Tree Node | v1.2 | 0/2 | Not started | - |
 | 8. Settings Screen | v1.2 | 0/1 | Not started | - |
 | 9. Predicate Management | v1.2 | 0/2 | Not started | - |
-| 10. Context Menu Actions | v1.2 | 2/3 | Complete    | 2026-03-22 |
+| 10. Context Menu Actions | v1.2 | 2/3 | Complete | 2026-03-22 |
+| 11. Permission Serialization | v1.3 | 0/0 | Not started | - |
+| 12. Permission Deserialization + Docs | v1.3 | 0/0 | Not started | - |
