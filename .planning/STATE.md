@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Permissions
-status: ready-to-plan
-stopped_at: Roadmap created for v1.3
-last_updated: "2026-03-22T21:00:00.000Z"
+status: executing
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-03-22T21:43:38Z"
 progress:
-  total_phases: 2
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 6
+  completed_phases: 4
+  total_plans: 9
+  completed_plans: 8
 ---
 
 # Project State
@@ -19,24 +19,20 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Developers can reliably move content between DynamicWeb environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** v1.3 Permissions — Phase 11 ready to plan
+**Current focus:** Phase 12 — permission-deserialization
 
 ## Current Position
 
-Phase: 11 of 12 (Permission Serialization)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-03-22 — Roadmap created for v1.3 Permissions
-
-Progress: [░░░░░░░░░░] 0%
+Phase: 11 (permission-serialization) — COMPLETE
+Plan: 1 of 1 (done)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 19
+- Total plans completed: 20
 - Average duration: 4min
-- Total execution time: ~1.3 hours
+- Total execution time: ~1.4 hours
 
 **By Phase:**
 
@@ -52,6 +48,7 @@ Progress: [░░░░░░░░░░] 0%
 | 08-settings-screen | 1 | 10min | 10min |
 | 09-predicate-mgmt | 2 | 6min | 3min |
 | 10-context-menu | 2 | 4min | 2min |
+| 11-permission-serialization | 1 | 7min | 7min |
 
 ## Accumulated Context
 
@@ -63,6 +60,8 @@ Recent decisions affecting current work:
 - [v1.2]: Config file remains source of truth — admin UI reads/writes JSON, no DB tables
 - [v1.2]: Context menu actions reuse ContentSerializer/ContentDeserializer via temp SyncConfiguration
 - [Phase 10-02]: Override GetEditorForCommand for FileUpload and Select binding in PromptScreenBase
+- [Phase 11-01]: PermissionMapper does I/O (PermissionService + UserManagementServices), ContentMapper stays pure
+- [Phase 11-01]: Used UserManagementServices.Users.GetUserById instead of deprecated User.GetUserByID
 
 ### Pending Todos
 
@@ -75,5 +74,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-22
-Stopped at: Roadmap created for v1.3 Permissions milestone
+Stopped at: Completed 11-01-PLAN.md
 Resume file: None

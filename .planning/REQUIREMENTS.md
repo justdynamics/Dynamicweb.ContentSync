@@ -55,9 +55,9 @@ Requirements for permissions milestone. Each maps to roadmap phases.
 
 ### Permission Serialization
 
-- [ ] **PERM-01**: Explicit page permissions are serialized to YAML (roles + user groups with permission levels)
-- [ ] **PERM-02**: Permission owner is stored by name for roles and by group name for user groups (not numeric IDs)
-- [ ] **PERM-03**: Pages without explicit permissions serialize no permission data (inheritance preserved by tree structure)
+- [x] **PERM-01**: Explicit page permissions are serialized to YAML (roles + user groups with permission levels)
+- [x] **PERM-02**: Permission owner is stored by name for roles and by group name for user groups (not numeric IDs)
+- [x] **PERM-03**: Pages without explicit permissions serialize no permission data (inheritance preserved by tree structure)
 
 ### Permission Deserialization
 
@@ -107,9 +107,9 @@ Requirements for permissions milestone. Each maps to roadmap phases.
 | ACT-06 | Phase 10 | Complete |
 | ACT-07 | Phase 10 | Complete |
 | ACT-08 | Phase 10 | Complete |
-| PERM-01 | Phase 11 | Pending |
-| PERM-02 | Phase 11 | Pending |
-| PERM-03 | Phase 11 | Pending |
+| PERM-01 | Phase 11 | Complete |
+| PERM-02 | Phase 11 | Complete |
+| PERM-03 | Phase 11 | Complete |
 | PERM-04 | Phase 12 | Pending |
 | PERM-05 | Phase 12 | Pending |
 | PERM-06 | Phase 12 | Pending |

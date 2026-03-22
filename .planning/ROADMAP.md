@@ -118,7 +118,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 11-01-PLAN.md — SerializedPermission DTO, PermissionMapper, ContentMapper/ContentSerializer wiring, and unit tests
+- [x] 11-01-PLAN.md — SerializedPermission DTO, PermissionMapper, ContentMapper/ContentSerializer wiring, and unit tests
 
 ### Phase 12: Permission Deserialization + Docs
 **Goal**: Permissions from YAML are restored on the target environment with name-based resolution and a safety fallback that prevents accidental public exposure
@@ -147,5 +147,5 @@ Plans:
 | 8. Settings Screen | v1.2 | 0/1 | Not started | - |
 | 9. Predicate Management | v1.2 | 0/2 | Not started | - |
 | 10. Context Menu Actions | v1.2 | 2/3 | Complete | 2026-03-22 |
-| 11. Permission Serialization | v1.3 | 0/1 | Not started | - |
+| 11. Permission Serialization | v1.3 | 1/1 | Complete | 2026-03-22 |
 | 12. Permission Deserialization + Docs | v1.3 | 0/0 | Not started | - |
