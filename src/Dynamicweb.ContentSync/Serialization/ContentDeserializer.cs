@@ -19,6 +19,7 @@ public class ContentDeserializer
     private readonly bool _isDryRun;
     private readonly string? _filesRoot;
     private readonly HashSet<string> _loggedTemplateMissing = new(StringComparer.OrdinalIgnoreCase);
+    private readonly PermissionMapper _permissionMapper;
 
     public ContentDeserializer(
         SyncConfiguration configuration,
@@ -32,6 +33,7 @@ public class ContentDeserializer
         _log = log;
         _isDryRun = isDryRun;
         _filesRoot = filesRoot;
+        _permissionMapper = new PermissionMapper(log);
     }
 
     private void Log(string message) => _log?.Invoke(message);
@@ -244,6 +246,8 @@ public class ContentDeserializer
                 Log($"[DRY-RUN] CREATE page {dto.PageUniqueId} ('{dto.MenuText}')");
                 foreach (var f in dto.Fields)
                     Log($"  set {f.Key} = '{f.Value}'");
+                if (dto.Permissions.Count > 0)
+                    Log($"[DRY-RUN] Would apply {dto.Permissions.Count} permission(s) to page {dto.PageUniqueId}");
                 ctx.Created++;
                 return -1;
             }
@@ -287,6 +291,7 @@ public class ContentDeserializer
 
             ctx.Created++;
             Log($"CREATED page {dto.PageUniqueId} -> ID={saved.ID}");
+            _permissionMapper.ApplyPermissions(saved.ID, dto.Permissions);
             return saved.ID;
         }
         else
@@ -330,6 +335,7 @@ public class ContentDeserializer
 
             ctx.Updated++;
             Log($"UPDATED page {dto.PageUniqueId} (ID={existingId})");
+            _permissionMapper.ApplyPermissions(existingId, dto.Permissions);
             return existingId;
         }
     }
@@ -876,6 +882,9 @@ public class ContentDeserializer
                 diffs.Add($"PropertyFields[{kvp.Key}]: '' -> '{kvp.Value}'");
             }
         }
+
+        if (dto.Permissions.Count > 0)
+            diffs.Add($"Would apply {dto.Permissions.Count} permission(s)");
 
         if (diffs.Count == 0)
         {
