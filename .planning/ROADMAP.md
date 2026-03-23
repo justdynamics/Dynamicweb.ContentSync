@@ -68,7 +68,11 @@
   3. SqlTableProvider reads DataGroup XML metadata (Table, NameColumn, CompareColumns) and serializes all rows of EcomOrderFlow to individual YAML files
   4. SqlTableProvider deserializes YAML files back into EcomOrderFlow table, matching rows by NameColumn with CompareColumns fallback, reporting rows added/updated/skipped per table
   5. Source-wins strategy applies: YAML rows overwrite matched target rows on deserialize
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 13-01-PLAN.md — Provider interface, registry, result types, ISqlExecutor abstraction
+- [ ] 13-02-PLAN.md — SqlTableProvider serialization (DataGroup metadata, SQL reading, YAML writing)
+- [ ] 13-03-PLAN.md — SqlTableProvider deserialization (MERGE upsert, source-wins, dry-run)
 
 ### Phase 14: Content Migration + Orchestrator
 **Goal**: Existing content serialization works unchanged through the new provider architecture, and the orchestrator can dispatch to multiple providers based on predicate configuration
