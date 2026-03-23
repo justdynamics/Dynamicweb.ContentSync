@@ -136,7 +136,7 @@ Plans:
 | 10. Context Menu Actions | v1.2 | 3/3 | Complete | 2026-03-22 |
 | 11. Permission Serialization | v1.3 | 1/1 | Complete | 2026-03-22 |
 | 12. Permission Deserialization + Docs | v1.3 | 2/2 | Complete | 2026-03-23 |
-| 13. Provider Foundation + SqlTableProvider Proof | v2.0 | 3/3 | Complete   | 2026-03-23 |
+| 13. Provider Foundation + SqlTableProvider Proof | v2.0 | 3/3 | Complete    | 2026-03-23 |
 | 14. Content Migration + Orchestrator | v2.0 | 0/0 | Not started | - |
 | 15. Ecommerce Tables at Scale | v2.0 | 0/0 | Not started | - |
 | 16. Admin UX | v2.0 | 0/0 | Not started | - |
