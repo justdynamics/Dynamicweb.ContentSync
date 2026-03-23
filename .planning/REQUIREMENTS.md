@@ -16,8 +16,8 @@ Requirements for the DynamicWeb.Serializer milestone. Each maps to roadmap phase
 
 ### SQL Table Serialization
 
-- [ ] **SQL-01**: SqlTableProvider serializes any SQL table to YAML using DataGroup XML metadata (Table, NameColumn, CompareColumns)
-- [ ] **SQL-02**: Identity resolution matches rows by NameColumn with CompareColumns fallback for empty NameColumn tables
+- [x] **SQL-01**: SqlTableProvider serializes any SQL table to YAML using DataGroup XML metadata (Table, NameColumn, CompareColumns)
+- [x] **SQL-02**: Identity resolution matches rows by NameColumn with CompareColumns fallback for empty NameColumn tables
 - [ ] **SQL-03**: FK dependency ordering via topological sort prevents constraint violations during deserialization
 - [x] **SQL-04**: Structured result objects report rows added/updated/skipped/failed per table
 - [ ] **SQL-05**: Source-wins conflict strategy: YAML rows overwrite matched target rows
@@ -87,8 +87,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROV-02 | Phase 13 | Complete |
 | PROV-03 | Phase 14 | Pending |
 | PROV-04 | Phase 14 | Pending |
-| SQL-01 | Phase 13 | Pending |
-| SQL-02 | Phase 13 | Pending |
+| SQL-01 | Phase 13 | Complete |
+| SQL-02 | Phase 13 | Complete |
 | SQL-03 | Phase 15 | Pending |
 | SQL-04 | Phase 13 | Complete |
 | SQL-05 | Phase 13 | Pending |
