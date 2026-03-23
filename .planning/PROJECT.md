@@ -1,12 +1,28 @@
-# Dynamicweb.ContentSync
+# DynamicWeb.Serializer (formerly Dynamicweb.ContentSync)
 
 ## What This Is
 
-A DynamicWeb AppStore app that serializes and deserializes content trees to/from YAML files on disk, enabling content to be version-controlled and deployed alongside code. The DynamicWeb equivalent of Sitecore Unicorn — replacing manual sync with automated, developer-friendly content synchronization. Tested and verified with cross-environment sync (Swift 2.2 → Swift 2.1) including visual editor rendering, page properties, and grid row styling. Configurable via DynamicWeb admin UI (Settings > Content > Sync) with query-based predicate management and ad-hoc serialize/deserialize via content tree context menus.
+A DynamicWeb AppStore app that serializes and deserializes database content to/from YAML files on disk, enabling full database state to be version-controlled and deployed alongside code. Started as a content-only sync tool (Sitecore Unicorn equivalent), now expanding to cover all DynamicWeb data groups — ecommerce settings, users, marketing, PIM, and more — via a pluggable provider architecture. Configurable via DynamicWeb admin UI (Settings > Database > Serialize).
 
 ## Core Value
 
-Developers can reliably move content between DynamicWeb environments through source control, with serialized YAML files as the single source of truth.
+Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
+
+## Current Milestone: v2.0 DynamicWeb.Serializer
+
+**Goal:** Broaden from content-only sync to full database serialization with a pluggable provider architecture.
+
+**Target features:**
+- Rename to DynamicWeb.Serializer (Settings > Database > Serialize)
+- Pluggable provider architecture (SqlTableProvider, SettingsProvider, SchemaProvider, ContentProvider)
+- SqlTableProvider for generic SQL table serialization (~74 data groups)
+- Migrate existing ContentProvider into new architecture
+- Ecommerce settings serialization (OrderFlows, OrderStates, Payment, Shipping, Countries, Currencies, VAT)
+- Settings & Schema serialization (~25 items)
+- Users, Marketing, PIM, Apps tables (~30 tables)
+- Log viewer with guided advice
+- Deserialize action moved to Asset management file detail page
+- Remove scheduled tasks (API commands replace them)
 
 ## Requirements
 
@@ -40,26 +56,48 @@ Developers can reliably move content between DynamicWeb environments through sou
 
 ### Active
 
-(None — planning next milestone)
+- [ ] Rename project to DynamicWeb.Serializer
+- [ ] Pluggable provider architecture per data group
+- [ ] SqlTableProvider for generic SQL table serialization
+- [ ] Migrate existing ContentProvider into provider architecture
+- [ ] Ecommerce settings serialization (~15 SQL tables)
+- [ ] Settings & Schema serialization (~25 items)
+- [ ] Users, Marketing, PIM, Apps serialization (~30 tables)
+- [ ] Log viewer with guided advice
+- [ ] Move deserialize to Asset management file detail page action
+- [ ] Remove scheduled tasks (API commands replace them)
+- [ ] Move admin UI from Settings > Content > Sync to Settings > Database > Serialize
 
 ### Out of Scope
 
-- Real-time change detection via Notifications API — v2 feature
-- Media/file serialization (images, documents) — content structure only
+- Real-time change detection via Notifications API — complexity vs value
+- Media/file serialization (images, documents) — files stay in git directly
 - Partial/incremental sync — full sync only
 - OAuth/licensing — open source app
+- File-based data groups (24 items) — files already live in git, no need to serialize
 - Publishing to NuGet registry — deferred to later milestone
-- Tested across multiple content trees — deferred to later milestone
 
 ## Context
 
-**Current State (v1.3 shipped):**
+**Current State (v1.3 shipped, starting v2.0):**
 - ~3,743 LOC C# across 100+ files
 - Tech stack: .NET 8.0, DynamicWeb 10.23.9 NuGet, YamlDotNet, System.IO.Compression
 - Verified on Swift 2.2 → Swift 2.1 cross-environment sync including permissions
 - Admin UI at Settings > Content > Sync with predicate management
 - Management API commands for CI/CD integration
 - 100+ commits over 5 days (2026-03-19 → 2026-03-23)
+
+**v2.0 Data Group Analysis (from C:\temp\DataGroups):**
+- 74 SQL-based (SqlDataItemProvider) — generic table dump, bulk of work
+- ~20 Settings-based (SettingsDataItemProvider) — settings files
+- ~5 Content-based — existing ContentProvider
+- ~5 Schema-based (SchemaDataItemProvider) — DB table structure
+- 24 File-based — EXCLUDED (files stay in git directly)
+- 1 Forms — custom
+
+**SqlTableProvider Pattern:**
+From DataGroup XMLs, each SQL data item has: Table, NameColumn, CompareColumns.
+Generic provider reads all rows, serializes to YAML, deserializes back by matching NameColumn or primary key.
 
 **DynamicWeb Content Hierarchy:**
 - Website (Area) → Pages → Grid → Rows → Columns → Paragraphs
@@ -96,6 +134,26 @@ Developers can reliably move content between DynamicWeb environments through sou
 | Source-wins null-out for item fields | Fields absent from YAML explicitly cleared to prevent stale target data | ✓ Good |
 | PropertyItem serialization | Page properties (Icon, SubmenuType) are separate from Item fields | ✓ Good |
 | GridRow visual properties | TopSpacing, BottomSpacing, ContainerWidth etc. needed for visual editor | ✓ Good |
+| Pluggable provider architecture | Different data groups need different serialization strategies | — Pending |
+| SqlTableProvider as generic handler | 74 of ~124 data groups use SqlDataItemProvider — one provider covers most | — Pending |
+| Remove scheduled tasks | API commands are sufficient; scheduled tasks add complexity | — Pending |
+
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd:transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
 
 ## Shipped Milestones
 
@@ -105,4 +163,4 @@ Developers can reliably move content between DynamicWeb environments through sou
 - **v1.3 Permissions** — Permission serialization/deserialization with safety fallback (2026-03-23)
 
 ---
-*Last updated: 2026-03-23 after v1.3 milestone shipped*
+*Last updated: 2026-03-23 after v2.0 milestone started*

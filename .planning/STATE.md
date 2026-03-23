@@ -1,30 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Admin UI
-status: unknown
-stopped_at: Completed 12-02-PLAN.md
-last_updated: "2026-03-23T11:32:31.191Z"
+milestone: v2.0
+milestone_name: DynamicWeb.Serializer
+status: planning
+stopped_at: Milestone v2.0 started
+last_updated: "2026-03-23T00:00:00.000Z"
 progress:
-  total_phases: 12
-  completed_phases: 11
-  total_plans: 23
-  completed_plans: 22
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-22)
+See: .planning/PROJECT.md (updated 2026-03-23)
 
-**Core value:** Developers can reliably move content between DynamicWeb environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 12 — permission-deserialization-docs
+**Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
+**Current focus:** Defining requirements for v2.0
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-23 — Milestone v2.0 started
 
 ## Performance Metrics
 
