@@ -21,10 +21,10 @@ Establish a pluggable provider architecture (ISerializationProvider interface + 
 ### Provider Interface
 - **D-04:** Interface + base class design: `ISerializationProvider` interface with `SerializationProviderBase` abstract class providing shared YAML helpers and logging setup
 - **D-05:** Interface includes `ValidatePredicate()` for config-time validation (e.g., reject SqlTable predicate missing dataGroupId)
-- **D-06:** Interface methods: Serialize, Deserialize, DryRun, ValidatePredicate, ProviderType (string), DisplayName (string)
+- **D-06:** Interface methods: Serialize, Deserialize (with isDryRun parameter), ValidatePredicate, ProviderType (string), DisplayName (string). DryRun is a parameter on Deserialize, not a standalone method — avoids duplicating the signature.
 
 ### DataGroup Metadata Access
-- **D-07:** Use DW's own DataGroup/schema API (`XmlDataGroupRepository`) to read metadata at runtime — DataGroup XMLs live at `Files/System/Deployment/DataGroups/`
+- **D-07:** Parse DataGroup XML files directly via `System.Xml.Linq` — DW's `XmlDataGroupRepository` is `internal` and inaccessible from our app. XMLs live at `Files/System/Deployment/DataGroups/`
 - **D-08:** Predicate config references a DataGroup ID (e.g., `"dataGroupId": "Settings_Ecommerce_Orders_060_OrderFlows"`), provider resolves table metadata via DW runtime APIs
 - **D-09:** Spike needed: verify XmlDataGroupRepository is accessible from our app context and returns DataItemType with Table/NameColumn/CompareColumns
 
@@ -32,7 +32,7 @@ Establish a pluggable provider architecture (ISerializationProvider interface + 
 - **D-10:** Tables WITH NameColumn: match rows by NameColumn value on deserialize (upsert)
 - **D-11:** Tables WITHOUT NameColumn: use composite primary key from `sp_pkeys`, joined with `$$` separator, alphabetically ordered — follows DW Deployment tool pattern exactly
 - **D-12:** SQL upsert via `MERGE` statement with identity column handling (SET IDENTITY_INSERT ON when identity is part of PK)
-- **D-13:** Two-pass import strategy: first pass inserts/updates, second pass resolves FK references — follows DW Deployment tool's ParentId hierarchy pattern
+- **D-13:** Two-pass import strategy deferred to Phase 15 — EcomOrderFlow (Phase 13 proof target) is a flat table with no self-referential hierarchy. Phase 13 implements single-pass MERGE. Phase 15 adds the second pass when FK ordering is built across multiple tables.
 
 ### SQL Access
 - **D-14:** Use DW's `Dynamicweb.Data.Database` API for all SQL operations — respect connection pooling and transaction scope, no raw SqlConnection
