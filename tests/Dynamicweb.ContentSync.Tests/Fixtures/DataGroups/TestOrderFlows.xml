@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DataGroup Id="Settings_Ecommerce_Orders_060_OrderFlows" Name="Order Flows" ParentId="Settings_Ecommerce_Orders">
+  <DataItemTypes>
+    <DataItemType Id="EcommerceOrderFlow" Name="Order Flows" ProviderTypeName="Dynamicweb.Deployment.DataItemProviders.Sql.SqlDataItemProvider">
+      <ProviderParameters>
+        <Parameter Name="Table" Value="EcomOrderFlow" />
+        <Parameter Name="NameColumn" Value="OrderFlowName" />
+        <Parameter Name="CompareColumns" Value="" />
+      </ProviderParameters>
+    </DataItemType>
+  </DataItemTypes>
+</DataGroup>
