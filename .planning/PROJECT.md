@@ -36,10 +36,10 @@ Developers can reliably move content between DynamicWeb environments through sou
 
 ### Active
 
-- [ ] Serialize explicit page permissions (roles and user groups) to YAML alongside page data
-- [ ] Deserialize permissions on target — roles restored directly, groups resolved by name
-- [ ] Safety fallback: deny Anonymous access when a referenced user group is missing on target
-- [ ] Document permission handling in README
+- [x] Serialize explicit page permissions (roles and user groups) to YAML alongside page data — v1.3
+- [x] Deserialize permissions on target — roles restored directly, groups resolved by name — v1.3
+- [x] Safety fallback: deny Anonymous access when a referenced user group is missing on target — v1.3
+- [x] Document permission handling in README — v1.3
 
 ### Out of Scope
 
@@ -105,4 +105,4 @@ Developers can reliably move content between DynamicWeb environments through sou
 - Document permission handling behavior in README
 
 ---
-*Last updated: 2026-03-22 after v1.3 milestone start*
+*Last updated: 2026-03-23 after v1.3 milestone complete*
