@@ -83,33 +83,33 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROV-01 | — | Pending |
-| PROV-02 | — | Pending |
-| PROV-03 | — | Pending |
-| PROV-04 | — | Pending |
-| SQL-01 | — | Pending |
-| SQL-02 | — | Pending |
-| SQL-03 | — | Pending |
-| SQL-04 | — | Pending |
-| SQL-05 | — | Pending |
-| ECOM-01 | — | Pending |
-| ECOM-02 | — | Pending |
-| ECOM-03 | — | Pending |
-| ECOM-04 | — | Pending |
-| CACHE-01 | — | Pending |
-| CACHE-02 | — | Pending |
-| CACHE-03 | — | Pending |
-| UX-01 | — | Pending |
-| UX-02 | — | Pending |
-| UX-03 | — | Pending |
-| UX-04 | — | Pending |
-| REN-01 | — | Pending |
+| PROV-01 | Phase 13 | Pending |
+| PROV-02 | Phase 13 | Pending |
+| PROV-03 | Phase 14 | Pending |
+| PROV-04 | Phase 14 | Pending |
+| SQL-01 | Phase 13 | Pending |
+| SQL-02 | Phase 13 | Pending |
+| SQL-03 | Phase 15 | Pending |
+| SQL-04 | Phase 13 | Pending |
+| SQL-05 | Phase 13 | Pending |
+| ECOM-01 | Phase 15 | Pending |
+| ECOM-02 | Phase 15 | Pending |
+| ECOM-03 | Phase 15 | Pending |
+| ECOM-04 | Phase 15 | Pending |
+| CACHE-01 | Phase 15 | Pending |
+| CACHE-02 | Phase 14 | Pending |
+| CACHE-03 | Phase 14 | Pending |
+| UX-01 | Phase 16 | Pending |
+| UX-02 | Phase 16 | Pending |
+| UX-03 | Phase 16 | Pending |
+| UX-04 | Phase 16 | Pending |
+| REN-01 | Phase 17 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 21 total
-- Mapped to phases: 0
-- Unmapped: 21 ⚠️
+- Mapped to phases: 21
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-23*
-*Last updated: 2026-03-23 after initial definition*
+*Last updated: 2026-03-23 after roadmap creation*

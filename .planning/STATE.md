@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: DynamicWeb.Serializer
-status: planning
-stopped_at: Milestone v2.0 started
+status: ready_to_plan
+stopped_at: Roadmap created for v2.0
 last_updated: "2026-03-23T00:00:00.000Z"
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -19,14 +19,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Defining requirements for v2.0
+**Current focus:** Phase 13 - Provider Foundation + SqlTableProvider Proof
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-23 — Milestone v2.0 started
+Phase: 13 of 17 (Provider Foundation + SqlTableProvider Proof)
+Plan: — (not yet planned)
+Status: Ready to plan
+Last activity: 2026-03-23 — Roadmap created for v2.0 milestone
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -51,8 +53,7 @@ Last activity: 2026-03-23 — Milestone v2.0 started
 | 09-predicate-mgmt | 2 | 6min | 3min |
 | 10-context-menu | 2 | 4min | 2min |
 | 11-permission-serialization | 1 | 7min | 7min |
-| Phase 12 P01 | 3min | 2 tasks | 3 files |
-| Phase 12 P02 | 1min | 1 tasks | 1 files |
+| 12-permission-deser | 2 | 4min | 2min |
 
 ## Accumulated Context
 
@@ -61,13 +62,10 @@ Last activity: 2026-03-23 — Milestone v2.0 started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [v1.2]: Config file remains source of truth — admin UI reads/writes JSON, no DB tables
-- [v1.2]: Context menu actions reuse ContentSerializer/ContentDeserializer via temp SyncConfiguration
-- [Phase 10-02]: Override GetEditorForCommand for FileUpload and Select binding in PromptScreenBase
-- [Phase 11-01]: PermissionMapper does I/O (PermissionService + UserManagementServices), ContentMapper stays pure
-- [Phase 11-01]: Used UserManagementServices.Users.GetUserById instead of deprecated User.GetUserByID
-- [Phase 12]: Lazy group name cache built on first ApplyPermissions call, reused across pages
-- [Phase 12]: Permissions section placed between Content Model and Configuration in README for logical flow
+- [v2.0]: ContentSerializer/ContentDeserializer internals remain unchanged — ContentProvider is a thin adapter
+- [v2.0]: SqlTableProvider driven by DataGroup XML metadata (Table, NameColumn, CompareColumns)
+- [v2.0]: FK ordering via topological sort from sys.foreign_keys
+- [v2.0]: Rename isolated as final phase to avoid concurrent breakage with feature work
 
 ### Pending Todos
 
@@ -76,9 +74,11 @@ None yet.
 ### Blockers/Concerns
 
 - [Phase 10]: ScreenInjector target type for content tree page list is unknown — needs assembly inspection
+- [Phase 13]: FK constraint enforcement level (SQL Server vs application-layer) needs runtime validation
+- [Phase 16]: DW asset management extension point for file detail screen injector needs verification
 
 ## Session Continuity
 
-Last session: 2026-03-23T08:54:08.131Z
-Stopped at: Completed 12-02-PLAN.md
+Last session: 2026-03-23
+Stopped at: Roadmap created for v2.0 milestone
 Resume file: None
