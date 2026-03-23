@@ -1,289 +1,198 @@
-# Feature Research: v1.2 Admin UI Integration
+# Feature Research
 
-**Domain:** DynamicWeb 10 Admin UI Extension (Settings Screens, Query Config, Context Menu Actions)
-**Researched:** 2026-03-21
-**Confidence:** MEDIUM (patterns verified from official DW sample code + API docs; content tree injection patterns LOW confidence — no public sample for page tree context menus)
-
----
+**Domain:** CMS database serialization (DynamicWeb full database state to YAML for git-based deployment)
+**Researched:** 2026-03-23
+**Confidence:** MEDIUM-HIGH (strong patterns from Sitecore Unicorn, Metabase serialization, and existing v1.x codebase; DynamicWeb-specific DataGroup internals verified against API docs but some gaps remain)
 
 ## Feature Landscape
 
-### Area 1: Settings Screen (Settings > Content > Sync)
+### Table Stakes (Users Expect These)
 
-#### Table Stakes
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Edit OutputDirectory path | Core config — where YAML files live on disk | Low | Text input editor via `EditorFor()`. Map to `SyncConfiguration.OutputDirectory`. |
-| Edit LogLevel | Standard operational config | Low | Dropdown/Select editor with options: debug, info, warn, error. |
-| Dry-run toggle | Already supported in config — must be surfaceable | Low | Boolean toggle editor. |
-| Save persists to config file | Config file is source of truth per PROJECT.md constraint | Medium | `CommandBase<T>.Handle()` must write JSON to disk, not to DB. Unlike typical DW patterns that use `SqlUpdate`. |
-| Settings appear in nav tree at Settings > Content > Sync | DW convention for app settings — AreasSection node provider | Low | `NavigationNodeProvider<AreasSection>` pattern proven in ExpressDelivery sample. |
-| Path validation on save | OutputDirectory must be valid filesystem path | Low | Validate in save command, return `CommandResult.ResultType.Invalid` with message. |
-| Load existing values from config file | Screen must show current state, not defaults | Medium | `DataQueryModelBase<T>` reads from config file on disk. Must handle missing file gracefully. |
-
-#### Differentiators
-
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| Visual status indicator (last sync time, result) | Gives admins confidence the tool is working without checking logs | Medium | Would require persisting last-run metadata. Could use a simple status file alongside config. |
-| Config file path display (read-only) | Shows admins where the config lives, aids debugging | Low | Informational field on settings screen. |
-| "Test connection" for OutputDirectory | Validates the directory is writable before actual sync | Low | Button action that tries to create/delete a temp file. |
-
-#### Anti-Features
-
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| DB-backed settings storage | Defeats the config-file-as-source-of-truth constraint. Config must be in source control. | Read/write the JSON config file directly. The file is the canonical store. |
-| Inline predicate editing on settings screen | Predicates are a sub-node concern with their own CRUD lifecycle. Mixing into settings creates a cluttered, non-standard UI. | Separate predicate management as a sub-node (Area 2). |
-| Output directory file browser | DW CoreUI has no standard file system browser component. Building one is scope creep. | Text input with validation on save. |
-
----
-
-### Area 2: Query/Predicate Management Sub-Node
-
-#### Table Stakes
+Features users assume exist when you claim "full database serialization." Missing these = product feels incomplete.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| List all predicates | Standard list screen showing configured predicates | Low | `ListScreenBase<PredicateDataModel>` with columns: Name, Path, AreaId. Proven pattern from ExpressDelivery sample. |
-| Add new predicate | CRUD — users must be able to create new include rules | Medium | `EditScreenBase<PredicateDataModel>` with editors for Name, Path, AreaId, Excludes. |
-| Edit existing predicate | CRUD — modify path, excludes, name | Medium | Same edit screen, loaded via `DataQueryModelBase<T>` with predicate index/name as key. |
-| Delete predicate | CRUD — remove a predicate with confirmation | Low | `ActionBuilder.Delete()` with `ConfirmAction`. Must prevent deleting last predicate (config requires at least one). |
-| Excludes management per predicate | Core predicate feature — exclude subpaths from include | Medium | List of strings on edit screen. Could use multi-value text editor or separate list. |
-| Persist changes to config file | All changes must write back to the JSON config file | Medium | Save command serializes full `SyncConfiguration` back to JSON. Must preserve formatting/comments — use `JsonSerializer` with `WriteIndented`. |
-| Sub-node appears under Sync in nav tree | DW convention for related settings with their own list | Low | `NavigationNodeProvider` with `HasSubNodes = true` on parent, sub-node returns predicate list screen. |
+| Pluggable provider interface | Unicorn, Metabase, and every mature serializer uses provider abstraction. Without it, adding new data types requires forking core code. | MEDIUM | `ISerializationProvider` with Serialize/Deserialize/DryRun methods. DW's own DataGroup system already categorizes by provider type (SqlDataItemProvider, SettingsDataItemProvider, SchemaDataItemProvider). Mirror that taxonomy. |
+| SqlTableProvider for generic SQL tables | 74 of ~124 data groups use SqlDataItemProvider. This is the bulk of the work and the primary value of v2.0. | HIGH | Generic provider reads table metadata from DataGroup XML (Table, NameColumn, CompareColumns), serializes all rows to YAML. Must handle ~74 tables without per-table custom code. |
+| Identity resolution via NameColumn | Cross-environment sync requires stable identity. Numeric PKs differ between DBs. DW DataGroups already define NameColumn for each table -- this is the natural key for matching. | MEDIUM | Match on NameColumn for upsert. If NameColumn is null/absent, fall back to composite key from CompareColumns. Content provider already proved this pattern with PageUniqueId (GUID). Metabase uses the same approach: "databases, tables, and fields are referred to by their names." |
+| Predicate extension with data type selection | Users need to choose WHAT to serialize (Content, Ecommerce, Settings, etc.), not just which content paths. Current predicates are content-path-only. | MEDIUM | Add `DataType` enum/string to PredicateDefinition. UI dropdown for selecting data group category. Each data type maps to a provider. Follows Unicorn's pattern of multiple named configurations per data type. |
+| Settings file serialization (~20 items) | ~20 data groups use SettingsDataItemProvider. These are config files that vary between environments. Users need them serialized alongside SQL data. | LOW | Settings are already files on disk. Provider serializes a manifest of active settings paths and their contents. Simpler than SQL tables -- no identity resolution needed, just file path as key. |
+| Schema export (~5 items) | ~5 data groups use SchemaDataItemProvider. Custom table structures that users may have extended. | LOW | Export table structure metadata as YAML. Serves as documentation and enables detecting schema drift between environments. Not for migration -- just reference. |
+| Dry-run mode for all providers | Already exists for ContentProvider. Users expect consistency across all provider types. | LOW | Extend existing dry-run pattern to provider interface. Each provider reports what WOULD change (rows to add/update/skip) without writing. Already proven pattern. |
+| Error handling with actionable messages | When deserialization fails (missing FK reference, type mismatch, missing group), users need to know exactly what to fix. | MEDIUM | Structured error results per provider. Each result includes: rows processed, rows failed, specific error messages with row identity. Required foundation for log viewer. |
+| Source-wins conflict strategy for all providers | Already proven for content. Must extend consistently to SQL tables: source YAML overwrites target rows matched by NameColumn. | LOW | Same pattern as content, applied generically. Unmatched target rows are left alone (not deleted) -- this avoids data loss from partial serialization. |
+| Provider registry / discovery | Users and the system need to know which providers are available and which data types they handle. | LOW | Simple dictionary mapping DataType string to ISerializationProvider instance. Populated at startup from registered providers. |
 
-#### Differentiators
+### Differentiators (Competitive Advantage)
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| Area picker dropdown (populated from DW areas) | AreaId is numeric — a dropdown is friendlier than typing a number | Medium | Query `Dynamicweb.Content.Services.Areas` to populate `Select` editor options. |
-| Path browser (pick from content tree) | Path is a content tree path — browsing is friendlier than typing | High | Would need `OpenSlideOverAction` with a content tree selector. DW may have this built-in for page selection. Needs phase-specific research. |
-| Predicate preview (show which pages match) | Visual confirmation that predicates are correct before syncing | High | Run `ContentPredicateSet.ShouldInclude()` against all pages and display results. Useful but expensive for large trees. |
-| Drag-and-drop reordering | Predicates evaluated in order — reordering matters for overlapping scopes | Medium | Currently predicates use OR logic (any match includes), so order does not matter. Only relevant if switching to first-match-wins semantics. |
-
-#### Anti-Features
-
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| DW Lucene Query expression UI for predicates | PROJECT.md mentions "DW query expression UI" but predicates are path-based include/exclude rules, not search queries. Lucene query UI is for full-text search, not content tree path matching. Forcing it would be a poor conceptual fit. | Use simple text fields for Path and Excludes with an AreaId dropdown. This matches the actual predicate model (`PredicateDefinition`: Name, Path, AreaId, Excludes). |
-| Complex boolean predicate builder | Predicate logic is simple: include paths, exclude sub-paths, OR across predicates. A visual query builder adds complexity for no gain. | Keep the text-based path model. Users who need complex predicates edit the JSON file directly. |
-| Separate "test" and "production" predicate sets | Multiple config sets per environment multiply complexity. One config file per environment is sufficient. | Config file is per-deployment. Different environments have different config files. |
-
----
-
-### Area 3: Context Menu Serialize Action
-
-#### Table Stakes
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| "Serialize to ZIP" option in page context menu | Core ad-hoc operation — serialize a specific subtree on demand | High | Requires `ScreenInjector` on the page tree screen or a `NavigationNodeProvider` context action. DW's `NavigationNode.ContextActionGroups` supports this. |
-| Serialize the selected page and all children | Subtree serialization is the unit of work | Medium | Reuse existing `ContentSerializer` with a temporary `SyncConfiguration` scoped to the selected node's path. |
-| Package result as ZIP file | Portable output format for download | Low | `System.IO.Compression.ZipFile.CreateFromDirectory()`. Standard .NET. |
-| Browser download of ZIP | Users expect to get the file immediately | Medium | `DownloadFileAction.Using<SerializeCommand>()` — DW CoreUI has `DownloadFileAction` specifically for this. Command creates ZIP, returns file path. |
-| Progress/status feedback | Serialization may take seconds — user needs to know it's working | Medium | Could use `OpenOutputViewerAction` for streaming log output, or `ShowMessageAction` for completion toast. |
-
-#### Differentiators
+Features that set this apart from DW's built-in DataPortability XML export and generic database dump tools.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Also save ZIP to disk (configurable path) | Allows automated pickup by CI/CD pipelines alongside browser download | Low | Write ZIP to OutputDirectory alongside browser download. Configurable via settings. |
-| Dry-run serialize (preview without download) | See what would be serialized before committing | Low | Reuse existing dry-run mode. Show results in a dialog or output viewer. |
-| Serialize to OutputDirectory (no ZIP) | Direct disk write matches scheduled task behavior | Low | Alternative action: write YAML directly to OutputDirectory, skip ZIP packaging. |
+| Log viewer with guided advice | DW's built-in tools give raw logs. A viewer that says "Create missing groups: Account Admin, CSR" or "Table EcomOrderFlow: 3 rows added, 1 updated" is genuinely useful. Transforms raw errors into actionable work items. | MEDIUM | Parse structured log entries. Show per-provider summaries. Highlight actionable items (missing references, failed rows). Requires structured log format from providers. |
+| Dependency-aware deserialization ordering | Tables have FK relationships. Deserializing EcomOrderState before EcomOrderFlow fails if states reference flows. Topological sort of table dependencies prevents FK violations automatically. | HIGH | Query `sys.foreign_keys` at runtime or maintain a static dependency map. Topological sort at deserialize time. This is what separates a production tool from one that requires manual ordering. Standard algorithm -- Kahn's or DFS-based toposort on table FK graph. |
+| Human-readable YAML over XML | DW's built-in DataPortability export uses XML. YAML is more readable, produces cleaner git diffs, and is easier to hand-edit when needed. Already proven in v1.x. | ALREADY DONE | Extends naturally to SQL table rows. Each row becomes a YAML document keyed by NameColumn value. Git diff shows exactly which fields changed on which named entity. |
+| Selective data group serialization via predicates | DW's DataPortability exports everything or nothing. Predicate-based selection lets teams serialize only the data groups they need for their deployment workflow. | LOW | Already have predicate infrastructure from v1.x. Extend with data type dimension. Teams that only care about ecommerce settings don't need to serialize users or marketing data. |
+| Asset management deserialize action | Instead of navigating to a settings page, users drop a zip in the file manager and click "Deserialize." Contextual action where the file lives. | MEDIUM | DW Admin API action on file detail page. Detects zip contents, routes to appropriate providers based on YAML structure. More intuitive than the current settings-page approach. |
+| DataGroup auto-discovery from DW metadata | Instead of hardcoding table lists, read DataGroup definitions from DW's own XML metadata at runtime. Future-proofs against DW version changes. | MEDIUM | Parse DataGroup XML files to build available provider/table list. Eliminates maintenance burden when DW adds new data groups in future versions. |
+| Cross-environment rename detection | When a NameColumn value changes between environments (e.g., "Standard Shipping" renamed to "Standard Delivery"), detect potential matches by CompareColumns similarity. | HIGH | Fuzzy matching using CompareColumns as secondary identity. Log as warning rather than auto-resolve. Useful but complex -- defer unless users report pain. |
 
-#### Anti-Features
+### Anti-Features (Commonly Requested, Often Problematic)
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Serialize to git directly | Git operations from a web admin UI are fragile and unsafe. Git is a developer tool. | Serialize to disk or ZIP. Git operations happen in the developer's local workflow. |
-| Selective field serialization from UI | Adds complexity for marginal value. Field exclusions belong in config. | Use config-file field exclusions if implemented. |
-| Serialize across multiple areas | Scope of a context menu action should be the node you right-clicked, not a cross-cutting operation. | Context menu serializes the clicked subtree only. Full-sync uses scheduled tasks. |
+Features that seem good but create real problems in a database serializer context.
 
----
-
-### Area 4: Context Menu Deserialize Action
-
-#### Table Stakes
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| "Deserialize from ZIP" option in page context menu | Core ad-hoc operation — import content from a ZIP package | High | Same injection pattern as serialize. Must handle file upload first. |
-| Upload ZIP via browser | Standard file upload UX | High | DW CoreUI does not have an obvious built-in file upload action. May need a `PromptScreenBase` with a file upload editor, or a custom API endpoint. This is the highest-risk feature — needs phase-specific research. |
-| Extract ZIP to temp directory | Standard unpackaging | Low | `ZipFile.ExtractToDirectory()`. Clean up temp dir after import. |
-| Deserialize into content tree | Reuse existing `ContentDeserializer` | Medium | Point deserializer at extracted YAML files. |
-| Choice: overwrite existing vs import as subtree | Users need control over how imported content relates to existing content | High | Overwrite = match by GUID and update. Import as subtree = generate new GUIDs and insert under selected node. Subtree import requires GUID remapping — significant new logic. |
-| Confirmation before applying | Destructive operation — must confirm | Low | `ConfirmAction` wrapping the command. Show summary of what will be changed. |
-
-#### Differentiators
-
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| Dry-run preview before deserialize | Show what would change before applying — builds trust | Medium | Reuse existing dry-run mode. Display diff in `OutputViewerScreen` or dialog. |
-| Conflict report | Show items that exist and will be overwritten | Medium | Compare incoming GUIDs against existing DB content. List matches. |
-| Undo/rollback | Reverse a bad deserialize | High | Would require snapshotting DB state before import. Too complex for v1.2. |
-
-#### Anti-Features
-
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Drag-and-drop file onto content tree | Non-standard DW interaction pattern. Would require custom JavaScript in admin UI. | Standard context menu action with file upload prompt. |
-| Auto-merge conflicting content | Merge semantics for structured CMS content are undefined. Source-wins or skip are the only safe options. | Source-wins overwrite, or skip-existing option. |
-| Deserialize from URL | Adds network complexity, security concerns, and error handling for no clear UX advantage over file upload. | Upload ZIP from local disk. |
-
----
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Bidirectional merge / conflict resolution | "What if both environments changed the same row?" | Exponential complexity. Merge logic for arbitrary SQL rows is unsolvable in the general case. Three-way merge requires tracking base state per row per environment. Sitecore Unicorn explicitly chose source-wins. Metabase uses source-wins (overwrite by entity_id). | Source-wins. Files are truth. Train teams to make changes in source environment, serialize, deploy via git. |
+| Incremental / delta sync | "Only sync what changed since last time" | Requires change tracking (triggers, timestamps, CDC). DW tables don't uniformly have modification timestamps. Adds state management (last sync marker per table). Fragile across schema changes. | Full serialize is fast enough for ~74 tables of config data (these are not transactional tables with millions of rows). Run on deploy, not continuously. |
+| Real-time change detection via DW Notifications | "Auto-serialize when someone saves in admin" | Notification handlers fire in request context -- serializing to disk during a web request is slow and error-prone. Race conditions with concurrent edits. Coupling to every DW save path. | Manual serialize via API command or CI/CD trigger. Explicit is better than implicit for deployment artifacts. |
+| Transactional data serialization (orders, carts, sessions) | "Serialize everything in the database" | Order/cart/session data is high-volume, environment-specific, and time-sensitive. Serializing it makes no sense for deployment workflows. Would produce massive YAML files. | Explicitly exclude transactional tables. The ~74 SqlDataItemProvider tables are configuration/structure data, not transactional data. This is by DW's own design. |
+| Per-field merge rules | "Keep target's price but take source's description" | Per-field rules require custom merge config per table. Configuration nightmare across 74 tables. Impossible to maintain across DW upgrades that add/remove columns. | Source-wins for entire rows. If partial updates are needed, do them via post-deploy SQL scripts. |
+| Schema migration (ALTER TABLE) | "Automatically migrate target DB schema when columns change" | Schema migration is a solved problem (EF migrations, Flyway, Liquibase). Conflating it with data serialization creates a fragile tool that does two things poorly. | SchemaProvider exports schema as reference YAML. Actual schema changes use DW's own migration system or purpose-built migration tools. |
+| File / media serialization | "Serialize images and documents too" | Files are already on disk in the DW file system. They belong in git directly, not round-tripped through a database serializer. Would massively bloat YAML output. | Document that files stay in git. The 24 file-based data groups are explicitly excluded per PROJECT.md. |
+| Provider-level parallelism | "Serialize all tables in parallel for speed" | Shared database connections, potential deadlocks during deserialization, FK ordering conflicts. Parallel reads are safe but parallel writes are dangerous. | Sequential provider execution. Serialize is read-only (safe to optimize later). Deserialize MUST be sequential for FK ordering. |
 
 ## Feature Dependencies
 
 ```
-[Settings Screen]
-    reads/writes --> [Config File on Disk]
-    provides config for --> [Context Menu Serialize]
-    provides config for --> [Context Menu Deserialize]
+[Provider Interface (ISerializationProvider)]
+    |
+    +--requires--> [Provider Registry]
+    |                  |
+    |                  +--enhances--> [DataGroup Auto-Discovery] (v3+)
+    |
+    +--enables--> [SqlTableProvider]
+    |                 |
+    |                 +--requires--> [Identity Resolution (NameColumn)]
+    |                 +--requires--> [YAML Row Serialization]
+    |                 +--enhances--> [Dependency Ordering (FK toposort)]
+    |
+    +--enables--> [SettingsDataItemProvider]
+    |
+    +--enables--> [SchemaDataItemProvider]
+    |
+    +--enables--> [ContentProvider Migration]
+    |                 (existing v1.x code wrapped in new interface)
 
-[Predicate Management Sub-Node]
-    reads/writes --> [Config File on Disk]
-    must exist before --> [Context Menu Serialize] (needs predicates to scope)
-    must exist before --> [Context Menu Deserialize] (optional — ad-hoc can use temp config)
+[Predicate Extension (DataType field)]
+    +--requires--> [Provider Interface] (predicates reference provider types)
+    +--enhances--> [Admin UI Predicate Editor] (dropdown for data type)
 
-[Context Menu Serialize]
-    depends on --> [ContentSerializer] (existing v1.0 code)
-    depends on --> [Config File] (for OutputDirectory, predicates)
-    uses --> [DownloadFileAction] (DW CoreUI built-in)
+[Log Viewer with Guided Advice]
+    +--requires--> [Structured Log Format] (providers emit structured results)
+    +--requires--> [Provider Interface] (per-provider result summaries)
 
-[Context Menu Deserialize]
-    depends on --> [ContentDeserializer] (existing v1.0 code)
-    depends on --> [File Upload mechanism] (RESEARCH NEEDED)
-    depends on --> [ZIP extraction] (.NET standard)
+[Asset Management Deserialize Action]
+    +--requires--> [Provider Interface] (runs providers from zip contents)
+    +--independent-of--> [Log Viewer] (but benefits from it)
 
-[Config File on Disk]
-    read by --> [Scheduled Tasks] (existing v1.0)
-    read by --> [Settings Screen] (new v1.2)
-    read by --> [Predicate Sub-Node] (new v1.2)
-    written by --> [Settings Screen] (new v1.2)
-    written by --> [Predicate Sub-Node] (new v1.2)
-    manually editable --> [Developer in IDE] (must remain valid)
+[Scheduled Task Removal]
+    +--requires--> [API Commands] (already exist from v1.2)
+    +--independent-of--> all new features
 ```
 
-### Critical Dependency: Config File Concurrency
+### Dependency Notes
 
-The config file is read by scheduled tasks, written by the UI, and manually edited by developers. There is no locking mechanism. Concurrent writes could corrupt the file.
+- **SqlTableProvider requires Identity Resolution:** Without NameColumn matching, the provider cannot determine whether to INSERT or UPDATE rows in the target. This is the core technical challenge of v2.0.
+- **Dependency Ordering enhances SqlTableProvider:** Not strictly required for a single table, but multi-table deserialization WILL fail on FK constraints without it. Workaround: temporarily disable FK checks per session (`EXEC sp_msforeachtable "ALTER TABLE ? NOCHECK CONSTRAINT all"` then re-enable). But topological sort is the correct long-term solution.
+- **Log Viewer requires Structured Log Format:** Current text-based logging is insufficient. Providers must emit structured results (rows added/updated/skipped with identity and error context) for the log viewer to produce guided advice.
+- **Provider Interface is the critical foundation:** Every other feature depends on this being designed correctly. It must accommodate all four provider types. Design it first, validate with ContentProvider migration, then build SqlTableProvider on top.
+- **ContentProvider Migration is the design validation:** Existing working code gets wrapped in the new interface. If the interface can't cleanly accommodate the existing content serializer, the design is wrong. Build this immediately after the interface.
+- **Predicate Extension depends on Provider Interface:** The DataType field on predicates must reference provider types. Design both together so the enum/string values align.
+- **Scheduled Task Removal is independent and low-risk:** API commands already exist from v1.2. Can happen at any point. Pure cleanup.
 
-**Mitigation:** Read-modify-write with file locking (`FileShare.None` during write). Accept that manual edits while UI is saving may conflict — document this as a known limitation.
+## MVP Definition
 
----
+### Launch With (v2.0 Core)
 
-## Complexity Assessment
+Minimum viable features to claim "full database serialization."
 
-| Feature Area | Table Stakes Count | Complexity | Risk |
-|--------------|-------------------|------------|------|
-| Settings screen | 7 features | Low-Medium | LOW — proven DW pattern from ExpressDelivery sample |
-| Predicate sub-node | 7 features | Medium | LOW — standard CRUD list/edit screens |
-| Context menu serialize | 5 features | Medium-High | MEDIUM — ScreenInjector on content tree is unverified |
-| Context menu deserialize | 6 features | High | HIGH — file upload mechanism unknown, subtree import logic is new |
+- [ ] Provider interface (`ISerializationProvider`) with Serialize/Deserialize/DryRun contract -- foundation
+- [ ] Provider registry mapping DataType strings to provider instances -- routing layer
+- [ ] ContentProvider migrated into provider architecture -- validates design, zero new functionality
+- [ ] SqlTableProvider handling generic SQL table serialization -- core v2.0 value, covers 74 data groups
+- [ ] Identity resolution via NameColumn with CompareColumns fallback -- required for SQL table upsert
+- [ ] Predicate extension with DataType field -- users must select what to serialize
+- [ ] Ecommerce settings tables (OrderFlows, OrderStates, Payment, Shipping, Countries, Currencies, VAT ~15 tables) -- highest-value data groups, proves SqlTableProvider works
+- [ ] Source-wins conflict strategy across all providers -- consistency guarantee
+- [ ] Structured result objects from all providers -- foundation for log viewer and error reporting
 
----
+### Add After Core Validation (v2.x)
 
-## MVP Recommendation for v1.2
+Features to add once SqlTableProvider is proven working on ecommerce tables.
 
-### Phase 1: Settings + Predicates (build first)
+- [ ] Dependency-aware deserialization ordering (FK toposort) -- needed for multi-table deserialize reliability
+- [ ] SettingsDataItemProvider (~20 settings items) -- simpler than SQL, extends coverage
+- [ ] SchemaDataItemProvider (~5 schema items) -- schema reference export
+- [ ] Remaining SQL tables: Users, Marketing, PIM, Apps (~30 tables) -- same SqlTableProvider pattern, more coverage
+- [ ] Log viewer with guided advice -- UX differentiator, depends on structured logging being solid
+- [ ] Asset management deserialize action -- UX convenience for zip-based workflows
+- [ ] Scheduled task removal -- cleanup, API commands are the replacement
 
-1. Settings screen with OutputDirectory, LogLevel, DryRun editors
-2. Predicate list screen with add/edit/delete
-3. Predicate edit screen with Name, Path, AreaId, Excludes
-4. All changes persist to config JSON file
-5. Navigation node under Settings > Content > Sync
+### Future Consideration (v3+)
 
-**Rationale:** Lowest risk, proven patterns, delivers immediate value. Config file read/write is the foundation all other features need.
+Features to defer until v2.x is stable and in production use.
 
-### Phase 2: Context Menu Serialize (build second)
+- [ ] DataGroup auto-discovery from DW XML metadata -- future-proofing, nice but not essential when table lists are known
+- [ ] Provider-specific predicate filtering (e.g., "only EcomOrderFlows where Active=true") -- per-table row filtering
+- [ ] Cross-provider dependency resolution (content referencing ecommerce entities) -- very complex, unclear value
+- [ ] Custom provider SDK for third-party extensions -- only if community demand materializes
+- [ ] Cross-environment rename detection via CompareColumns -- fuzzy matching, high complexity
 
-1. "Serialize subtree" context menu action on content tree page nodes
-2. Serialize selected page + children to temp directory
-3. ZIP and trigger browser download via `DownloadFileAction`
-4. Optional: also save to OutputDirectory
+## Feature Prioritization Matrix
 
-**Rationale:** Medium risk. Depends on ScreenInjector working with the content tree. `DownloadFileAction` is a proven DW pattern.
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| Provider interface (ISerializationProvider) | HIGH | MEDIUM | P1 |
+| Provider registry | HIGH | LOW | P1 |
+| ContentProvider migration | MEDIUM | LOW | P1 |
+| SqlTableProvider (generic SQL) | HIGH | HIGH | P1 |
+| Identity resolution (NameColumn) | HIGH | MEDIUM | P1 |
+| Predicate extension (DataType) | HIGH | LOW | P1 |
+| Ecommerce tables (~15) | HIGH | LOW (once SqlTableProvider works) | P1 |
+| Structured result objects | HIGH | MEDIUM | P1 |
+| Dependency ordering (FK toposort) | HIGH | HIGH | P2 |
+| SettingsDataItemProvider | MEDIUM | LOW | P2 |
+| SchemaDataItemProvider | LOW | LOW | P2 |
+| Remaining SQL tables (~30) | MEDIUM | LOW | P2 |
+| Log viewer with guided advice | MEDIUM | MEDIUM | P2 |
+| Asset management deserialize action | MEDIUM | MEDIUM | P2 |
+| Scheduled task removal | LOW | LOW | P3 |
+| DataGroup auto-discovery | LOW | MEDIUM | P3 |
 
-### Phase 3: Context Menu Deserialize (build last)
+**Priority key:**
+- P1: Must have for v2.0 launch -- proves "full database serialization" claim
+- P2: Should have, add in v2.x waves -- expands coverage and UX
+- P3: Nice to have, future consideration
 
-1. "Deserialize from ZIP" context menu action
-2. File upload via prompt screen
-3. Extract and deserialize with overwrite mode only (skip subtree import for v1.2)
-4. Confirmation dialog before applying
+## Competitor Feature Analysis
 
-**Rationale:** Highest risk. File upload mechanism needs investigation. Subtree import with GUID remapping should be deferred to v1.3.
-
-### Defer to v1.3
-
-| Feature | Why Defer |
-|---------|-----------|
-| Import as subtree (GUID remapping) | New logic not in existing codebase. Complex and risky. |
-| Predicate preview (show matching pages) | Nice-to-have, not blocking. |
-| Path browser (content tree picker for predicate paths) | Requires `OpenSlideOverAction` with page selector. Needs research. |
-| Visual status indicator (last sync time) | Requires new persistence mechanism. |
-
----
-
-## DW CoreUI Pattern Reference
-
-### Key Classes for Implementation
-
-| Pattern | DW Class | Our Usage |
-|---------|----------|-----------|
-| Settings nav node | `NavigationNodeProvider<AreasSection>` | Register "Sync" node under Settings > Content |
-| Settings edit screen | `EditScreenBase<SyncSettingsDataModel>` | OutputDirectory, LogLevel, DryRun editors |
-| Predicate list | `ListScreenBase<PredicateDataModel>` | List predicates with context actions |
-| Predicate edit | `EditScreenBase<PredicateDataModel>` | Add/edit predicate fields |
-| Data model | `DataViewModelBase` with `[ConfigurableProperty]` | Field labels and editor hints |
-| Load data | `DataQueryModelBase<T>` / `DataQueryListBase<T, TSource>` | Read from config file |
-| Save data | `CommandBase<T>` | Write to config file |
-| Delete action | `ActionBuilder.Delete()` with command | Delete predicate with confirmation |
-| Nav path | `NavigationNodePathProvider<T>` | Breadcrumb navigation |
-| Content tree action | `NavigationNode.ContextActionGroups` | Serialize/Deserialize context menu items |
-| Screen injection | `ScreenInjector<T>` (if needed) | Inject actions into page edit screens |
-| File download | `DownloadFileAction.Using<TCommand>()` | ZIP download trigger |
-| Dialog prompt | `PromptScreenBase<T>` | File upload for deserialize |
-| Confirmation | `ConfirmAction.For(command, title, message)` | Confirm destructive deserialize |
-| Composite action | `CompositeAction(action1, action2)` | Chain close-popup + reload after save |
-| Mapping config | `MappingConfigurationBase` | Map domain models to view models |
-
-### NuGet Dependencies Required
-
-The project currently references `Dynamicweb` (10.23.9). The admin UI features require:
-- `Dynamicweb.CoreUI` — for screens, actions, commands, queries (transitive via `Dynamicweb`)
-- `Dynamicweb.Application.UI` — for `AreasSection`, `SettingsArea` (transitive via `Dynamicweb`)
-- Possibly `Dynamicweb.Content.UI` — for content tree screen types to inject into
-
-**Verification needed:** Confirm these are already transitive dependencies of the `Dynamicweb` meta-package, or if explicit references are required.
-
----
-
-## Open Questions / Research Gaps
-
-| Question | Impact | Confidence |
-|----------|--------|------------|
-| How to add context menu actions to content tree page nodes (not settings tree)? | Blocks context menu features | LOW — no public sample found. `NavigationNodeProvider` for content tree vs settings tree may differ. May need `ScreenInjector` on page edit/overview screen instead. |
-| Does DW CoreUI have a file upload editor component? | Blocks deserialize feature | LOW — not found in API docs. May need custom API endpoint + JavaScript. |
-| Is `Dynamicweb.Content.UI` needed as explicit dependency? | Affects project setup | LOW — likely transitive but unverified. |
-| Can `DownloadFileAction` handle large ZIP files (100MB+)? | Affects serialize feature for large trees | LOW — undocumented. Likely streams but unverified. |
-| How to get current page context (PageId, AreaId) in a context menu command? | Required for scoped serialize/deserialize | MEDIUM — command likely receives context via query parameters, but exact mechanism needs verification. |
-
----
+| Feature | DW Built-in DataPortability (XML) | Sitecore Unicorn | Metabase Serialization | Our Approach (DynamicWeb.Serializer) |
+|---------|----------------------------------|------------------|----------------------|--------------------------------------|
+| Format | XML | Rainbow (custom text) | YAML | YAML -- readable, git-friendly diffs |
+| Identity resolution | Primary keys | Item GUIDs (stable across envs) | Entity IDs + name-based for DB objects | NameColumn (natural key from DataGroup metadata) + GUID for content |
+| Selective serialization | All or nothing | Predicate-based path inclusion/exclusion with multiple configs | Export with include/exclude flags | Predicate-based with data type dimension |
+| Provider architecture | Monolithic export | Pluggable (data store, evaluator, predicate, loader) | Fixed internal serializers | Pluggable per data group type (4 provider types) |
+| Conflict resolution | Last write wins | Source-wins default, evaluator-based overrides | Source-wins (overwrite by entity_id) | Source-wins, consistent across all providers |
+| Dependency ordering | Not handled (manual table order) | N/A (flat item tree, no FK concerns) | Internal ordering by entity references | FK topological sort for SQL tables |
+| Human guidance on errors | Raw error log | Sync console with colored status per item | Basic error reporting | Log viewer with guided advice (differentiator) |
+| Git workflow integration | None | Files on disk, CI/CD via API endpoint | CLI export/import, CI/CD pipelines | Files on disk + Management API commands + CI/CD |
+| Dry-run mode | No | No (transparent sync shows pending changes) | No | Yes -- reports changes without writing, all providers |
+| Schema handling | Exports schema in XML | Serializes template definitions as items | Exports field metadata | SchemaProvider for reference YAML |
 
 ## Sources
 
-- [DW10 Screen Types and Elements](https://doc.dynamicweb.dev/documentation/extending/administration-ui/screentypes.html) — HIGH confidence (official docs)
-- [DW10 AppStore App Guide](https://doc.dynamicweb.dev/documentation/extending/guides/newappstoreapp.html) — HIGH confidence (official docs, includes NavigationNodeProvider + EditScreen patterns)
-- [DW10 CoreUI Actions API](https://doc.dynamicweb.dev/api/Dynamicweb.CoreUI.Actions.Implementations.html) — HIGH confidence (official API reference, confirms DownloadFileAction exists)
-- [DW10 NavigationNode API](https://doc.dynamicweb.dev/api/Dynamicweb.CoreUI.Navigation.NavigationNode.html) — HIGH confidence (official API reference, confirms ContextActionGroups property)
-- [DW10 ScreenInjector API](https://doc.dynamicweb.dev/api/Dynamicweb.CoreUI.Screens.ScreenInjector-1.html) — MEDIUM confidence (official API, sparse documentation)
-- [ExpressDelivery Sample Code](https://github.com/dynamicweb/Samples) — HIGH confidence (official DW sample, verified locally)
-- [DW10 DownloadFileAction API](https://doc.dynamicweb.dev/api/Dynamicweb.CoreUI.Actions.Implementations.DownloadFileAction.html) — HIGH confidence (official API reference)
-- Existing ContentSync codebase (`SyncConfiguration`, `ConfigLoader`, `ContentPredicate`) — HIGH confidence (local verified code)
+- [Sitecore Unicorn GitHub](https://github.com/SitecoreUnicorn/Unicorn) -- provider architecture, predicate system, source-wins strategy, multiple configuration support (HIGH confidence)
+- [Unicorn Configuration Examples](https://github.com/SitecoreUnicorn/Unicorn/blob/master/src/Unicorn/Standard%20Config%20Files/Unicorn.Configs.Default.example) -- predicate configuration patterns, dependency declarations (HIGH confidence)
+- [Metabase Serialization Docs](https://www.metabase.com/docs/latest/installation-and-operation/serialization) -- YAML export, entity ID resolution, name-based DB matching (HIGH confidence)
+- [DynamicWeb DataGroup API](https://doc.dynamicweb.com/api/html/fda49b07-764f-35e3-676a-93eb31258b0b.htm) -- DataGroup class: Id, Name, Definition, ItemTypes properties (MEDIUM confidence -- limited detail in public docs)
+- [Topological Sort for DB Dependencies](https://dogan-ucar.de/resolving-database-dependencies-using-topological-graph-sorting/) -- FK ordering algorithm pattern (HIGH confidence)
+- [SQL Server FK Hierarchy Script](https://www.mssqltips.com/sqlservertip/6179/sql-server-foreign-key-hierarchy-order-and-dependency-list-script/) -- sys.foreign_keys approach for dependency discovery (HIGH confidence)
+- [FK Constraint Resolution via Topological Sort](https://www.bigbinary.com/blog/resolve-foreign-key-constraint-conflict-while-copying-data-using-topological-sort) -- practical implementation pattern (HIGH confidence)
+- [DW DataPortability NuGet](https://www.nuget.org/packages/Dynamicweb.DataPortability/10.18.15) -- current package version reference (HIGH confidence)
+- Existing v1.x codebase (ContentSerializer, ReferenceResolver, PredicateDefinition, ContentPredicate) -- proven patterns to extend (HIGH confidence)
+- v2.0 pivot analysis (project_v2_pivot.md) -- wave plan, data group breakdown, SqlTableProvider pattern (HIGH confidence)
 
 ---
-
-*Feature research for: DynamicWeb 10 Admin UI Integration (Dynamicweb.ContentSync v1.2)*
-*Researched: 2026-03-21*
+*Feature research for: DynamicWeb.Serializer v2.0 -- Provider Architecture and Full Database Serialization*
+*Researched: 2026-03-23*

@@ -1,214 +1,243 @@
 # Project Research Summary
 
-**Project:** Dynamicweb.ContentSync v1.2 Admin UI
-**Domain:** DynamicWeb 10 admin UI extension — settings screens, predicate CRUD, context menu actions, zip packaging
-**Researched:** 2026-03-21
-**Confidence:** MEDIUM (stack HIGH; architecture MEDIUM; features MEDIUM; pitfalls MEDIUM-HIGH)
+**Project:** DynamicWeb.Serializer v2.0
+**Domain:** CMS database serialization — pluggable provider architecture for DynamicWeb 10
+**Researched:** 2026-03-23
+**Confidence:** HIGH
 
 ## Executive Summary
 
-ContentSync v1.2 adds a DW10 admin UI layer over the existing v1.1 serialization/deserialization engine. The pattern is well-established: DW10 provides a declarative C# screen framework (`EditScreenBase`, `ListScreenBase`, `CommandBase`, `DataQueryModelBase`) that integrates with the Settings tree via `NavigationNodeProvider<AreasSection>` and into existing screens via `ScreenInjector<T>`. A single NuGet package addition — `Dynamicweb.Content.UI 10.23.9` — brings the full transitive chain needed (CoreUI, Application.UI, Content.UI). No Razor SDK change, no custom views, no heavyweight meta-packages. The existing serialization engine is reused without modification; context menu actions construct temporary `SyncConfiguration` objects and pass them to the existing `ContentSerializer`/`ContentDeserializer` via constructor injection.
+DynamicWeb.Serializer v2.0 is a database serialization tool that extends the proven v1.3 content sync engine to cover the full DW10 database: ~74 SQL configuration tables, ~20 settings entries, and ~5 schema groups — in addition to the existing content tree. The approach is well-understood: build a pluggable `ISerializationProvider` interface (proven by Sitecore Unicorn and Metabase), drive all SQL table operations from DataGroup XML metadata already shipped with DW10, and wrap the existing ContentSerializer/ContentDeserializer as an adapter rather than rewriting it. No new NuGet packages are required — the existing Dynamicweb 10.23.9 meta-package ships all required APIs (`Dynamicweb.Data.Database`, `Dynamicweb.Configuration.SystemConfiguration`, CoreUI screens).
 
-The recommended build order is a strict four-phase sequence driven by dependency and ascending risk. Phases 1-3 (config infrastructure, settings screen, predicate CRUD) follow proven patterns from the official ExpressDelivery sample and carry LOW implementation risk. Phase 4 (context menu serialize/deserialize) carries HIGH risk because three key DW API behaviors are unverified at runtime: the exact screen type to inject into for the content tree, how `DownloadFileAction` handles large file streaming, and whether CoreUI provides a file upload component for the deserialize flow. Phase 4 must begin with isolated spikes before connecting to serialize/deserialize logic.
+The recommended build order follows dependency chains: establish the provider interface and prove SqlTableProvider on one ecommerce table first (Wave 1), then migrate ContentProvider as an adapter to validate the architecture (Wave 2), then scale SqlTableProvider to all ecommerce settings tables while solving FK ordering and cache invalidation (Wave 3), then add SettingsProvider and SchemaProvider (Wave 4), then remaining SQL tables (Wave 5), and finally Admin UI changes including the log viewer, tree node relocation, and asset management action (Wave 6). This order ensures every subsequent wave builds on a working foundation and regressions are isolated to the layer being changed.
 
-The single most critical architectural constraint is that `ContentSync.config.json` remains the source of truth — no database tables. Every UI command follows a read-modify-write pattern on the JSON file. Config concurrency (concurrent UI saves, manual edits during a UI save) is the top pitfall and must be addressed with `ReaderWriterLockSlim` + file locking + stale-write detection in the infrastructure phase, before any screen touches the file.
+The primary risks are all in the Foundation wave: FK constraint violations from wrong table insertion order, identity column ID mismatches breaking cross-environment FK references, silent data loss for tables with empty NameColumn, and NULL/empty-string confusion in YAML round-trips. All four must be designed and verified before any ecommerce table is attempted. A secondary risk is breaking the working ContentProvider during architecture extraction — mitigated completely by using the adapter pattern and never touching ContentSerializer/ContentDeserializer internals.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The existing stack (`.NET 8`, `Dynamicweb 10.23.9`, `YamlDotNet 13.7.1`, `Microsoft.Extensions.Configuration.Json 8.0.1`) is unchanged. A single line added to the project file is the complete stack change for v1.2:
-
-```
-<PackageReference Include="Dynamicweb.Content.UI" Version="10.23.9" />
-```
-
-This one package transitively delivers `Dynamicweb.CoreUI` (screen bases, commands, queries, actions), `Dynamicweb.Application.UI` (AreasSection, SettingsArea, ActionBuilder), and `Dynamicweb.Content.UI` itself (PageListScreen, PageEditScreen for context menu injection). ZIP packaging is handled by `System.IO.Compression.ZipFile` from the .NET 8 BCL — no external library needed. The Razor SDK and embedded asset infrastructure are explicitly not needed because all screens use DW's declarative C# screen builder pattern.
+The existing stack handles everything v2.0 needs. `Dynamicweb.Data.Database` + `CommandBuilder` is the canonical DW10 SQL access pattern (confirmed in official training docs and the AppStore app guide) and must be used for all SqlTableProvider operations — no raw `SqlConnection`, no Dapper, no EF Core. `SystemConfiguration.Instance` handles settings read/write. Existing CoreUI `ListScreenBase`/`EditScreenBase` patterns handle all Admin UI additions. YamlDotNet must stay on 13.7.1 — v14 introduced breaking API changes with no benefit.
 
 **Core technologies:**
-- `Dynamicweb.Content.UI 10.23.9`: admin UI screens and content tree integration — minimum sufficient package; avoids pulling all of Ring1 (20+ packages including Ecommerce, Products, Insights)
-- `System.IO.Compression` (.NET 8 BCL): zip packaging for serialize downloads and deserialize uploads — zero additional dependency
-- `Microsoft.NET.Sdk` (existing, no change): no SDK change needed since all screens are declarative C#, not custom Razor views
+- `Dynamicweb.Data.Database` + `CommandBuilder`: all SQL reads/writes — DW10 canonical pattern, handles connection pooling internally
+- `Dynamicweb.Configuration.SystemConfiguration`: settings key read/write — API confirmed, bulk prefix enumeration needs runtime validation
+- `CoreUI ListScreenBase` / `EditScreenBase` / `NavigationNodeProvider`: Admin UI screens, already proven in v1.x
+- `YamlDotNet 13.7.1`: YAML serialization — keep frozen, v14 is a breaking upgrade with no benefit
+- `Microsoft.Extensions.Configuration.Json 8.0.1`: config file loading — already in project, no change needed
+- `INFORMATION_SCHEMA.COLUMNS` + `sys.foreign_keys`: SQL Server metadata for schema export and FK dependency ordering
 
-See `STACK.md` for the full transitive dependency chain, the complete class-to-namespace mapping, and the verified list of what NOT to add.
+One gap: `SystemConfiguration.Instance.GetValue()` is confirmed for exact-path reads, but enumerating all child keys under a prefix path (needed for SettingsProvider) requires runtime validation. Direct XML parsing of `GlobalSettings.config` may be needed as fallback.
 
 ### Expected Features
 
-Research identified four feature areas with clear complexity and risk profiles.
+**Must have (table stakes) — v2.0 core:**
+- `ISerializationProvider` interface with Serialize/Deserialize/DryRun contract — foundation all else depends on
+- Provider registry mapping DataType strings to provider instances — routing layer
+- ContentProvider adapter wrapping existing ContentSerializer/ContentDeserializer unchanged — validates design
+- SqlTableProvider — generic, metadata-driven, covers all 74 SQL-based data groups
+- Identity resolution via NameColumn with CompareColumns/PK fallback — required for cross-environment upsert
+- Predicate extension with `providerType` + `dataGroupId` fields — users choose what to serialize
+- Ecommerce settings tables (~15 tables: OrderFlows, OrderStates, Payment, Shipping, Countries, Currencies, VAT) — highest-value proof of SqlTableProvider
+- Structured result objects from all providers — foundation for log viewer and error reporting
+- Source-wins conflict strategy, consistent across all providers
 
-**Must have (table stakes):**
-- Settings screen (OutputDirectory, LogLevel) under Settings > Content > Sync — LOW risk, proven pattern
-- Config reads/writes JSON file directly — file is source of truth, no DB
-- Predicate list screen with add/edit/delete — LOW-MEDIUM risk, standard CRUD
-- Predicate edit form (Name, Path, AreaId, Excludes) — LOW-MEDIUM risk
-- "Serialize to ZIP" context menu on content tree pages — MEDIUM-HIGH risk (ScreenInjector target type unverified)
-- Browser ZIP download from serialize action — MEDIUM risk (DownloadFileAction pattern is proven but streaming behavior for large files is undocumented)
-- "Deserialize from ZIP" context menu with file upload — HIGH risk (upload mechanism unknown in CoreUI)
-- Confirmation dialog before destructive deserialize — LOW risk
+**Should have — v2.x:**
+- Dependency-aware deserialization ordering (FK topological sort) — needed for reliable multi-table deserialize
+- SettingsProvider (~20 settings items, KeyPatterns-based)
+- SchemaProvider (~5 schema items, additive-only ALTER TABLE)
+- Remaining SQL tables: Users, Marketing, PIM, Apps (~30 tables)
+- Log viewer with guided advice (parse structured log entries, show actionable summaries)
+- Asset management deserialize action (contextual zip-based workflow)
+- Scheduled task removal (deprecate with warning in v2.0, remove in v3.0)
 
-**Should have (differentiators for v1.2 stretch):**
-- Config file path shown read-only on settings screen — LOW effort, useful debugging aid
-- Area picker dropdown (populated from DW areas) on predicate edit — MEDIUM, friendlier than typing a numeric ID
-- Serialize also saves ZIP to OutputDirectory alongside browser download — LOW effort
+**Defer to v3+:**
+- DataGroup auto-discovery from DW XML metadata at runtime
+- Provider-specific row filtering predicates (e.g., "only EcomOrderFlows where Active=true")
+- Custom provider SDK for third-party extensions
+- Cross-environment rename detection via CompareColumns fuzzy matching
 
-**Defer to v1.3:**
-- Import as new subtree with GUID remapping — significant new logic not in existing codebase
-- Predicate path browser (content tree picker for path field) — requires `OpenSlideOverAction` research
-- Predicate preview (show which pages match predicates) — expensive for large trees
-- Visual status indicator (last sync time) — requires new persistence mechanism
-- Dry-run preview from context menu before applying deserialize — nice-to-have, not blocking
-
-**Anti-features (never build):**
-- DB-backed settings storage — violates config-as-source-of-truth constraint
-- Lucene query expression UI for predicates — semantic mismatch; predicates are path rules, not index queries
-- Git push from admin UI — fragile and unsafe; git is a developer tool
-
-See `FEATURES.md` for full complexity tables, feature dependency graph, and MVP recommendation.
+**Anti-features to reject explicitly:**
+- Bidirectional merge / conflict resolution — source-wins is the correct answer, same as Unicorn and Metabase
+- Incremental/delta sync — DW config tables lack uniform modification timestamps; full serialize is fast enough
+- Real-time notification-based auto-serialize — slow in request context, race conditions
+- Provider-level parallelism during deserialize — FK ordering requires sequential execution
+- Schema migration (ALTER TABLE) as part of data serialization — use DW's own migration system
 
 ### Architecture Approach
 
-The v1.2 architecture is a management UI layer over the existing config file with the serialization engine untouched. New components fit into three groups: (1) config infrastructure — `ConfigPathResolver` (extracted from duplicated scheduled task logic) and `ConfigWriter` (counterpart to existing `ConfigLoader`); (2) settings UI — screens, queries, commands following the ExpressDelivery CQRS-style screen pattern; (3) context menu actions — a `ScreenInjector` on the page overview screen that adds serialize/deserialize actions backed by commands that construct temporary `SyncConfiguration` objects and delegate to the existing engine.
+The architecture adds a thin provider layer over the existing implementation without changing internal serializer logic. `SerializerOrchestrator` replaces direct `ContentSerializer` instantiation in API commands and iterates configured providers. `ContentProvider` is a pure adapter — it constructs a `SyncConfiguration` from the provider predicate and delegates to the unchanged `ContentSerializer`/`ContentDeserializer`. `SqlTableProvider` is metadata-driven: it reads DataGroup XML files via `DataGroupReader` to get table name, NameColumn, and CompareColumns, then runs generic SELECT/INSERT/UPDATE via the DW Database API. Provider output is separated into prefixed subdirectories (`_content/`, `_sql/`, `_settings/`, `_schema/`) to prevent collision. Backward compatibility is maintained: predicates without `providerType` default to `"Content"`, so existing v1.x configs load unchanged.
 
 **Major components:**
-1. `ConfigPathResolver` — shared config file discovery, extracted from the 4-path search logic currently duplicated in both scheduled tasks
-2. `ConfigWriter` — write `SyncConfiguration` back to JSON, counterpart to `ConfigLoader`
-3. `ContentSyncSettingsNodeProvider` — `NavigationNodeProvider<AreasSection>` registering "Content Sync" with "Predicates" sub-node
-4. Settings screens + queries + commands — `EditScreenBase` / `ListScreenBase` with file-backed read-modify-write commands; index-based predicate identity (`GetId() => $"{Index}"`) because predicates have no DB-assigned ID
-5. `PageOverviewInjector` — `ScreenInjector<T>` adding serialize/deserialize context menu to content tree
-6. `SerializeToZipCommand` — builds temp `SyncConfiguration`, runs `ContentSerializer`, zips output, returns `FileResult` download
-7. `DeserializeFromZipCommand` — accepts uploaded zip, extracts to temp dir, builds temp `SyncConfiguration`, runs `ContentDeserializer`, cleans up
-
-The critical design insight: context menu actions reuse `ContentSerializer`/`ContentDeserializer` by constructing a temporary `SyncConfiguration`. No code duplication needed. The serializer/deserializer already accept config via constructor and are agnostic to how that config was created.
-
-See `ARCHITECTURE.md` for component boundaries, full data flow diagrams, implementation patterns with code samples, and the anti-patterns to avoid.
+1. `ISerializationProvider` + `SerializationProviderBase` — contract and shared YAML/logging helpers
+2. `ProviderRegistry` — maps providerType strings to provider instances at runtime
+3. `SerializerOrchestrator` — iterates predicates, dispatches to providers, aggregates results
+4. `ContentProvider` — adapter wrapping ContentSerializer/ContentDeserializer (zero internal changes)
+5. `SqlTableProvider` — generic SQL table provider driven by DataGroup XML metadata
+6. `DataGroupReader` — parses DataGroup XMLs to extract table/column/cache metadata
+7. `FlatFileStore` — per-row YAML I/O for SQL tables (distinct from FileSystemStore's mirror-tree layout)
+8. `SerializerConfiguration` — extends SyncConfiguration with providerType per predicate
+9. `LogViewerScreen` — reads structured log entries, surfaces actionable guidance
+10. `AssetManagementDeserializeInjector` — deserialize action on .zip files in DW asset management
 
 ### Critical Pitfalls
 
-1. **Config file concurrency — read-modify-write race** — concurrent UI saves or a UI save overlapping a manual edit silently overwrites changes. Prevent with `ReaderWriterLockSlim` + `FileShare.None` file locking + stale-write detection (compare file timestamp at save time to the timestamp when the UI loaded the config). Must be built before any screen touches the config file.
+1. **FK constraint violations from wrong table insertion order** — Query `sys.foreign_keys` at deserialization startup, topologically sort all scheduled tables before processing any. Wrap each DataGroup in a SQL transaction for clean rollback. Must be solved in the Foundation wave before any ecommerce table is touched.
 
-2. **NavigationNodeProvider chain incomplete — node visible but screen 404s** — all four artifacts (provider, screen, query, model) must exist and be discoverable by DW's assembly scanner before the first test. Build as a complete vertical slice; do not test the node in isolation.
+2. **Identity column ID mismatches breaking cross-environment FK references** — Never use numeric PKs as canonical identifiers. Use NameColumn as the match key (same as DW's own Deployment tool). Maintain a `Dictionary<tableName, Dictionary<sourceId, targetId>>` runtime map during deserialization; translate FK column values through this map when processing child tables. Never use `SET IDENTITY_INSERT ON`.
 
-3. **ScreenInjector targets wrong screen type** — silently injects nothing if the generic type parameter names the wrong DW screen class. Spike with a minimal "Test" action first; verify it appears on page nodes (not area nodes) before building the real action logic. The type name must be discovered via assembly inspection, not guessed.
+3. **Silent data loss for tables with empty NameColumn** — At DataGroup parse time, classify each table into a match strategy: Named (NameColumn populated), Composite (CompareColumns populated), PK-based (query `sys.key_constraints`), or Full-row hash. Log the strategy for every table. Fail loudly if no viable strategy exists. Affects ~10+ tables including critical junction tables (`EcomCountries`, `EcomOrderStateRules`, `EcomVatCountryRelations`).
 
-4. **Zip temp file leaks on exception or process recycle** — temp directories from failed serialize operations accumulate on disk. Implement cleanup-on-startup to scan for `ContentSync-*` directories older than 1 hour. Do not rely solely on `finally` blocks (process recycle bypasses them).
+4. **Breaking ContentProvider during architecture extraction** — Do NOT touch ContentSerializer/ContentDeserializer internals. The ContentProvider adapter wraps them from outside. Run all existing unit tests and verify full round-trip matches v1.3 output byte-for-byte before proceeding to Wave 3.
 
-5. **Config validation diverges between UI and scheduled task paths** — extract validation into a shared `ConfigValidator` called by both `ConfigLoader` and UI save commands. Never write config JSON without validating through the shared validator.
+5. **Serializing environment-specific settings values** — Maintain a blocklist for credentials, SMTP, payment gateway params, domain URLs, page IDs. Serialize all settings to YAML but tag environment-specific keys with `_envSpecific: true`. Skip them on deserialization by default. No recovery if payment gateway credentials are overwritten.
 
-See `PITFALLS.md` for the full list including moderate pitfalls: zip-slip attack prevention on deserialize upload, permission guards on context menu commands, unknown JSON field preservation on UI save, and config caching in scheduled tasks.
+6. **NULL vs empty string corruption in SQL serialization** — Always emit explicit `null` (`~`) for SQL NULL; explicit `""` for empty strings; absent key means "preserve existing." Establish this format in the Foundation wave — retroactively fixing serialized files across 74 tables is prohibitively expensive.
+
+7. **Duplicate DataItemType across multiple DataGroups** — `EcomMethodCountryRelation` appears in both Payment and Shipping DataGroup XMLs. Track processed tables in a global session registry; merge rather than replace on subsequent encounters.
 
 ## Implications for Roadmap
 
-Based on combined research, a four-phase structure is recommended. Phases are ordered by dependency chain and ascending risk. The highest-uncertainty work is isolated in Phase 4 where accumulated DW UI experience from earlier phases can inform implementation spikes.
+Based on combined research, the six-wave plan from ARCHITECTURE.md is strongly recommended. The dependency chain is clear and the risk ordering is well-justified.
 
-### Phase 1: Config Infrastructure + Settings Tree Node
+### Phase 1: Provider Architecture Foundation
 
-**Rationale:** Zero DW UI framework risk. Config concurrency is the top pitfall and must be solved before any screen writes the file. The nav node registration is the most uncertain DW behavior in the settings UI work — surfacing it in Phase 1 allows early course correction without losing investment in the full screen stack.
+**Rationale:** `ISerializationProvider` is the foundation every subsequent feature depends on. SqlTableProvider covers 74/124 data groups (highest single-provider leverage). Proving it on EcomOrderFlow de-risks the entire architecture before scale work begins. All critical pitfalls (FK ordering, identity handling, NameColumn matching, NULL handling, duplicate DataItemType) must be solved here — they cannot be retrofitted later.
 
-**Delivers:** `ConfigPathResolver` (shared config file discovery), `ConfigWriter` (JSON write path with file locking), `ContentSyncSettingsNodeProvider` (nav node visible in DW admin tree), `ContentSyncNavigationNodePathProvider` (breadcrumb support), refactored scheduled tasks using shared `ConfigPathResolver`.
+**Delivers:** `ISerializationProvider`, `SerializationProviderBase`, `ProviderRegistry`, `DataGroupReader`, `SqlColumnMapper`, `FlatFileStore`, `SqlTableProvider.Serialize()` + `Deserialize()`, proven round-trip on EcomOrderFlow.
 
-**Addresses:** Settings tree navigation (table stakes), config-file-as-source-of-truth constraint, scheduled task `FindConfigFile()` deduplication.
+**Addresses (FEATURES.md P1):** Provider interface, provider registry, SqlTableProvider, identity resolution, structured result objects.
 
-**Avoids:** Pitfall 1 (concurrency — locking built before first UI write), Pitfall 2 (node visible but 404 — validate registration early), Pitfall 10 (config caching — scheduled tasks load fresh from disk on each run).
+**Avoids (PITFALLS.md):** FK constraint violations (P1), identity ID mismatches (P2), empty NameColumn data loss (P4), NULL/empty string corruption (P7), duplicate DataItemType (P8).
 
-**Research flag:** Needs a runtime spike in a running DW instance to confirm the `AreasSection` type parameter places the node under "Settings > Content" (not a top-level Settings section). Verify placement before building the screen stack.
+**Research flag:** NEEDS PHASE RESEARCH — FK topological sort implementation, `sys.foreign_keys` query, ID mapping dictionary design, and whether DW FK constraints are enforced at the SQL Server level or application level.
 
-### Phase 2: Settings Screen (OutputDirectory, LogLevel)
+### Phase 2: Content Migration (Adapter + Orchestrator)
 
-**Rationale:** Simplest screen pattern — single object, no collection management. Establishes the full screen/query/command cycle (EditScreenBase + DataQueryModelBase + CommandBase) that Phase 3 will replicate for predicates. Delivers immediate practical value: admins can edit config without touching the JSON file manually.
+**Rationale:** Wrapping existing content code in the provider interface validates the architecture with zero new functionality risk. If the interface can't cleanly accommodate ContentSerializer, the design is wrong — better to discover this on a low-risk adapter than after three waves of SqlTableProvider work. Orchestrator must work before adding more providers.
 
-**Delivers:** `ContentSyncSettingsDataModel`, `ContentSyncSettingsQuery` (reads config, maps to model), `SaveContentSyncSettingsCommand` (read-modify-write with stale-write detection), `ContentSyncSettingsScreen` with OutputDirectory and LogLevel editors, shared `ConfigValidator` class.
+**Delivers:** `ContentProvider` adapter, `SerializerOrchestrator`, updated `ConfigLoader` (providerType defaulting to "Content"), updated API commands using orchestrator. All existing tests pass unchanged.
 
-**Addresses:** Settings edit (7 table stakes features from FEATURES.md), path validation on save, graceful handling of missing config file.
+**Addresses (FEATURES.md P1):** ContentProvider migration, predicate extension (providerType field), config backward compatibility.
 
-**Avoids:** Pitfall 6 (validation divergence — shared `ConfigValidator` built here), Pitfall 1 (stale-write detection implemented in save command).
+**Avoids (PITFALLS.md):** ContentProvider regression (P3), config backward compatibility breakage (P6).
 
-**Research flag:** Standard pattern from ExpressDelivery sample — skip research phase.
+**Research flag:** STANDARD PATTERNS — adapter pattern is well-documented. Existing codebase is the primary reference.
 
-### Phase 3: Predicate Management (CRUD List)
+### Phase 3: Ecommerce Settings Tables (SqlTableProvider at Scale)
 
-**Rationale:** Depends on Phase 2 screen pattern being validated. More complex than Phase 2 because it manages a collection with index-based identity rather than a single settings object. All patterns are proven; risk is implementation complexity, not API uncertainty.
+**Rationale:** Ecommerce tables have the highest FK complexity (OrderFlow -> OrderStates -> OrderStateRules; Countries referenced by Payment/Shipping/VAT). Solving ordering and cross-DataGroup dependency here informs simpler remaining tables. These are also the highest-value tables for users (deployment workflows invariably involve ecommerce config).
 
-**Delivers:** `ContentSyncPredicateDataModel` (index-based `IIdentifiable`), list and by-index queries, save/delete commands, `ContentSyncPredicateListScreen` with edit/delete context actions, `ContentSyncPredicateEditScreen` with Name, Path, AreaId, Excludes editors.
+**Delivers:** ~15 ecommerce settings tables serialized. FK ordering proven at scale. ServiceCache invalidation working. Tables without NameColumn handled via fallback match strategies.
 
-**Addresses:** Predicate list/add/edit/delete (7 table stakes features from FEATURES.md), AreaId dropdown from DW areas (differentiator), unknown JSON field preservation on save (Pitfall 7).
+**Addresses (FEATURES.md P1):** Ecommerce tables — proves "full database serialization" claim for core audience.
 
-**Avoids:** Pitfall 3 (query UI mismatch — simple text fields, not Lucene expression UI), Pitfall 7 (multi-predicate config rendered as a list, not flattened into a single-screen form).
+**Avoids (PITFALLS.md):** FK violations at scale (P1), cross-DataGroup duplicate tables (P8), ServiceCache staleness.
 
-**Research flag:** Standard extension of Phase 2 patterns to a collection model — skip research phase. Index-based identity is a deliberate design choice; document it in the phase plan.
+**Research flag:** STANDARD PATTERNS — FK metadata from `sys.foreign_keys` is well-documented. DataGroup XMLs already inspected. ServiceCache API (`Dynamicweb.Caching.CacheManager`) needs verification at implementation time.
 
-### Phase 4: Context Menu Actions (Serialize + Deserialize)
+### Phase 4: SettingsProvider + SchemaProvider
 
-**Rationale:** Highest DW API uncertainty. Three behaviors require runtime discovery before implementation can proceed: (1) exact page tree screen type for ScreenInjector, (2) `DownloadFileAction` streaming behavior for large zips, (3) file upload mechanism for the deserialize flow. Built last because it has no hard dependency on Phases 2-3, and the DW UI knowledge accumulated in earlier phases reduces debugging time for the API discovery work.
+**Rationale:** Can proceed in parallel with Phase 3 (depends only on Phase 1 provider interface). SettingsProvider is simpler than SqlTableProvider (no FK concerns, no identity mapping). SchemaProvider is read-only export. Both complete coverage of DW10's 4 data group types.
 
-**Delivers:** `PageOverviewInjector` (context menu on page tree), `SerializeToZipCommand` (temp config + ContentSerializer + zip + FileResult download), `DeserializeFromZipCommand` (upload + extract + temp config + ContentDeserializer), `DeserializeUploadScreen` (modal or prompt screen for zip upload). Context menu serialize built before deserialize (cleaner output path, lower risk first).
+**Delivers:** `SettingsProvider` serializing ~20 settings items by KeyPatterns. `SchemaProvider` exporting ~5 table schemas. Environment-specific settings blocklist protecting credentials.
 
-**Addresses:** Context menu serialize (5 table stakes features), context menu deserialize (5 of 6 table stakes — subtree GUID remapping deferred to v1.3).
+**Addresses (FEATURES.md P2):** Settings serialization, schema export.
 
-**Avoids:** Pitfall 4 (temp file leaks — cleanup-on-startup), Pitfall 5 (wrong ScreenInjector target — spike first with minimal test action), Pitfall 8 (zip-slip — validate zip contents entry-by-entry before extraction), Pitfall 9 (unguarded commands — permission checks on all command handlers).
+**Avoids (PITFALLS.md):** Environment-specific settings overwrite (P5) — blocklist must ship WITH SettingsProvider, not after.
 
-**Research flag:** REQUIRES phase-specific research. Three open questions must be answered via runtime inspection before implementation planning:
-- What is the exact DW class name for the content tree page list/overview screen? (inspect `Dynamicweb.Content.UI.dll` on test instance)
-- Does `DownloadFileAction` stream or buffer responses for large (>50MB) zip files? (test with large content tree)
-- Does CoreUI provide a `FileUpload` editor in a modal/prompt screen, or is a custom API endpoint needed? (inspect `PromptScreenBase` and CoreUI editor registry)
+**Research flag:** NEEDS PHASE RESEARCH — `SystemConfiguration.Instance` bulk key enumeration under path prefix may require direct `GlobalSettings.config` XML parsing as fallback. Needs runtime validation before implementation begins.
+
+### Phase 5: Remaining SQL Tables
+
+**Rationale:** Same SqlTableProvider pattern, more coverage. Users, Marketing, PIM, Apps tables (~30 tables). SqlTableProvider is proven at scale on ecommerce tables; remaining tables are incremental.
+
+**Delivers:** Full coverage of all ~74 SqlDataItemProvider data groups.
+
+**Addresses (FEATURES.md P2):** Remaining SQL tables (Users, Marketing, PIM, Apps).
+
+**Avoids:** No new pitfall categories — same patterns as Phase 3. Table-specific quirks addressed case-by-case.
+
+**Research flag:** STANDARD PATTERNS — same SqlTableProvider mechanics as Phase 3.
+
+### Phase 6: Admin UI + Log Viewer + Asset Management
+
+**Rationale:** UI changes are cosmetic and don't affect the serialization pipeline. They depend on config format being finalized (Phases 1-2) and structured log output being in place (Phases 1-3). Doing UI last means rename and tree node relocation are a single coordinated change with no intermediate breakage.
+
+**Delivers:** Tree node relocated from Content > Sync to Database > Serialize. `LogViewerScreen` with structured log parsing and guided advice. `AssetManagementDeserializeInjector` for zip-based workflow. ScheduledTasks deprecated with warning (not removed — removal in v3.0).
+
+**Addresses (FEATURES.md P2):** Log viewer, asset management deserialize action, scheduled task deprecation.
+
+**Avoids (PITFALLS.md):** Tree node relocation without redirect (keep old node as deprecation redirect). Scheduled task removal without migration path (deprecate only in v2.0).
+
+**Research flag:** NEEDS PHASE RESEARCH — DW asset management extension point for file detail screen injector needs verification. Tree node parent section "Database > Serialize" needs confirmation that DW10 exposes this section or how to register a new one.
 
 ### Phase Ordering Rationale
 
-- Phase 1 before all others: `ConfigPathResolver` is a shared dependency of all commands and queries; concurrency protection must precede any UI writes; nav node registration uncertainty must be resolved cheaply before screen stack investment.
-- Phase 2 before Phase 3: Settings screen establishes and validates the screen/query/command pattern that predicate screens replicate. Also validates the NuGet package and DW assembly scanning configuration.
-- Phase 3 before Phase 4: Completes the settings UI milestone. Phase 4 is architecturally independent of 2-3 but isolating the highest-risk work last means earlier phases can proceed at full speed without blocking on API uncertainty.
-- Serialize before deserialize within Phase 4: serialize has a known output path (DownloadFileAction is documented); deserialize's file upload mechanism is the single most uncertain DW behavior in the entire milestone.
+- Provider interface (Phase 1) must come first because 5 of 8 critical pitfalls must be solved at the foundation level and cannot be retrofitted.
+- Content migration (Phase 2) before ecommerce tables (Phase 3) because the orchestrator must be working and tested before adding more load, and ContentProvider is the lowest-risk validation case.
+- Ecommerce tables (Phase 3) before remaining SQL tables (Phase 5) because FK ordering complexity is highest in ecommerce — solving it here makes Phase 5 incremental.
+- SettingsProvider (Phase 4) can run in parallel with Phase 3 if team capacity allows, since it depends only on Phase 1.
+- Admin UI (Phase 6) last because: (a) UI depends on finalized config format; (b) log viewer depends on structured log output from providers; (c) rename/relocation is safest as a single final coordinated change.
 
 ### Research Flags
 
-Needs dedicated research spike during planning:
-- **Phase 1:** Exact section type for "Settings > Content" nav placement — verify `AreasSection` vs a more specific `ContentSection` by deploying node provider to test instance and observing placement
-- **Phase 4:** Three open API questions (ScreenInjector target type, DownloadFileAction streaming, file upload in modal) — MUST be resolved before Phase 4 implementation planning begins
+Phases needing deeper research during planning:
+- **Phase 1 (Foundation):** Whether DW ecommerce table FK constraints are enforced at the SQL Server level or application level. FK topological sort implementation. ID mapping dictionary design across providers.
+- **Phase 4 (Settings/Schema):** `SystemConfiguration.Instance` bulk key enumeration under a path prefix. Must be validated at runtime before designing SettingsProvider.
+- **Phase 6 (Admin UI):** DW asset management extension point for injecting a "Deserialize" action on zip files. Tree node parent section for "Database > Serialize."
 
-Standard patterns, skip research phase:
-- **Phase 2:** Full ExpressDelivery sample reference available; `EditScreenBase` + `DataQueryModelBase` + `CommandBase` are well-documented
-- **Phase 3:** Extension of Phase 2 patterns to a list/collection; index-based identity is a design decision, not a research question
+Phases with standard patterns (skip research-phase):
+- **Phase 2 (Content Migration):** Pure adapter pattern. Existing codebase is the authoritative reference.
+- **Phase 3 (Ecommerce Tables):** SqlTableProvider mechanics proven in Phase 1. FK metadata from `sys.foreign_keys` is standard SQL Server.
+- **Phase 5 (Remaining Tables):** Same mechanics as Phase 3.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | NuGet dependency chain verified via package pages AND assembly reflection on test instance DLLs at `swift.test.forsync`; version pinning rationale solid |
-| Features | MEDIUM | Settings and predicate features HIGH (proven patterns); context menu features LOW (no public sample for page tree injection or file upload in CoreUI modals) |
-| Architecture | MEDIUM | Screen/query/command patterns HIGH (proven from ExpressDelivery); ScreenInjector target type LOW; file upload in modals LOW; temp config pattern HIGH (constructor injection already exists) |
-| Pitfalls | MEDIUM-HIGH | Config concurrency and zip pitfalls verified via .NET docs; DW-specific ScreenInjector and DownloadFileAction streaming behaviors inferred from sparse official docs |
+| Stack | HIGH | All APIs confirmed in official DW10 training docs, AppStore guide, and existing v1.x usage. No new packages needed. Only gap is SystemConfiguration bulk enumeration (MEDIUM for that specific API). |
+| Features | HIGH | Strong patterns from Unicorn, Metabase, and v1.x codebase. DataGroup XML analysis confirms the 74/20/5 breakdown. Anti-features are clearly defined with rationale. |
+| Architecture | HIGH | Based on direct codebase analysis and ~100 DataGroup XML inspections. Component boundaries are clean. Wave ordering is well-justified by dependency chains. |
+| Pitfalls | HIGH | Based on direct codebase analysis (937 LOC ContentDeserializer), ~100 DataGroup XML files inspected, and v1.0-v1.3 DW API development experience. All 8 critical pitfalls have concrete prevention strategies. |
 
-**Overall confidence:** MEDIUM
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **ScreenInjector target type for content tree:** The DW page list/overview screen class name must be discovered by inspecting loaded assemblies on the test instance — cannot be reliably inferred from documentation. Address in Phase 4 research spike.
-- **File upload in CoreUI modals:** No public example of `PromptScreenBase` with a `FileUpload` editor has been found. If CoreUI does not support this natively, the deserialize feature may require a custom API endpoint or admin page with a file input rather than a context menu action. Investigate in Phase 4 research spike; if unsupported, plan for the simpler alternative.
-- **DownloadFileAction behavior for large responses:** Undocumented whether it streams or buffers the response. Test with a content tree of 100+ pages on the test instance. If buffering, a background task + polling pattern will be needed for large trees.
-- **AreasSection vs ContentSection nav placement:** The ExpressDelivery sample uses `AreasSection` which maps to a top-level Settings section. "Settings > Content > Sync" may require a `ContentSection` or more specific type parameter. Verify by deploying the node provider in Phase 1 and observing actual placement.
-- **Config concurrency scope:** `ReaderWriterLockSlim` guards in-process concurrency within a single DW worker process. Cross-process editing (developer editing the JSON file while DW admin is open) is an accepted v1.2 limitation. Document explicitly.
+- **SystemConfiguration bulk key enumeration:** Does `SystemConfiguration.Instance` support enumerating all child keys under a path prefix? If not, need direct `GlobalSettings.config` XML parsing. Validate at runtime before designing SettingsProvider (Phase 4 planning).
+
+- **DW FK constraint enforcement level:** Are DW ecommerce table FKs enforced at the SQL Server level or only application-layer? If application-layer only, topological sort is still recommended for data integrity but violations won't manifest as `SqlException`. Validate by querying `sys.foreign_keys` before Phase 1 implementation.
+
+- **ServiceCache invalidation API:** DataGroup XMLs list ServiceCache class names (e.g., `Dynamicweb.Ecommerce.Orders.Discounts.DiscountService`). Presumed mechanism is `Dynamicweb.Caching.CacheManager`. Needs verification before Phase 3 implementation.
+
+- **DW asset management injector extension point:** The CoreUI extension point for adding actions to the file detail screen in asset management needs runtime verification. Handle in Phase 6 planning.
+
+- **Project rename scope:** PITFALLS.md strongly recommends the rename (Dynamicweb.ContentSync -> DynamicWeb.Serializer) happens either first or last, never in the middle. If done last (Phase 6), no special action needed now. If done first, a migration helper for config path, log path, and scheduled task type names stored in the DW database must be built in Phase 1.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- NuGet: `Dynamicweb.Content.UI`, `Dynamicweb.Application.UI`, `Dynamicweb.CoreUI` — dependency chain and class locations verified via package pages and assembly reflection
-- Assembly reflection on test instance: `C:\Projects\Solutions\swift.test.forsync\Swift2.1\Dynamicweb.Host.Suite\bin\Debug\net8.0\` — confirmed class names and namespaces
-- ExpressDelivery sample: `C:\Projects\temp\dwextensionsample\Samples-main\ExpressDelivery\` — verified NavigationNodeProvider, EditScreen, ListScreen, Commands, Queries, ScreenInjector patterns
-- [DW10 AppStore App Guide](https://doc.dynamicweb.dev/documentation/extending/guides/newappstoreapp.html) — official NavigationNodeProvider, EditScreen, Command, Query examples
-- [DW10 CoreUI Actions API](https://doc.dynamicweb.dev/api/Dynamicweb.CoreUI.Actions.Implementations.html) — DownloadFileAction, RunCommandAction, ConfirmAction confirmed
-- [.NET ZipArchive](https://learn.microsoft.com/en-us/dotnet/api/system.io.compression.ziparchive) — zip creation and entry-level validation (zip-slip prevention)
-- [.NET ReaderWriterLockSlim](https://learn.microsoft.com/en-us/dotnet/api/system.threading.readerwriterlockslim) — thread-safe file access
+- DW10 Core Concepts Training — CommandBuilder, Database class, parameterized SQL patterns
+- DW10 AppStore App Guide — full CRUD pattern with CommandBuilder confirmed
+- DW10 Screen Types documentation — ListScreenBase, EditScreenBase, NavigationNodeProvider
+- `Database.CreateDataReader` / `ExecuteNonQuery` / `ExecuteScalar` API reference
+- Sitecore Unicorn GitHub — provider architecture, predicate system, source-wins strategy
+- Metabase Serialization docs — YAML format, entity name-based identity resolution
+- SQL Server `sys.foreign_keys` / `INFORMATION_SCHEMA` — FK dependency ordering pattern
+- Direct codebase analysis — `ContentSerializer.cs` (158 LOC), `ContentDeserializer.cs` (937 LOC), v1.3 full source
+- DataGroup XML files (~100 files at `C:\temp\DataGroups\`) — table metadata, NameColumn patterns, ServiceCaches
 
 ### Secondary (MEDIUM confidence)
-- [DW10 Screen Types](https://doc.dynamicweb.dev/documentation/extending/administration-ui/screentypes.html) — screen type concepts; sparse on content tree specifics
-- [DW10 ScreenInjector API](https://doc.dynamicweb.dev/api/Dynamicweb.CoreUI.Screens.ScreenInjector-1.html) — existence confirmed; target type discovery not documented
-- [DW10 NavigationNode API](https://doc.dynamicweb.dev/api/Dynamicweb.CoreUI.Navigation.NavigationNode.html) — ContextActionGroups property confirmed
-- Existing ContentSync codebase — verified `ContentSerializer`/`ContentDeserializer` constructor signatures enabling temp-config reuse pattern
+- Dynamicweb.Configuration Namespace API docs — SystemConfiguration confirmed, bulk enumeration uncertain
+- v2.0 pivot document (`project_v2_pivot.md`) — wave plan, data group breakdown
+- DW DataPortability NuGet — current package version reference
 
-### Tertiary (LOW confidence — needs runtime validation)
-- Context menu injection on content tree page nodes — no public sample; ScreenInjector pattern inferred from `OrderOverviewInjector` in ExpressDelivery
-- File upload mechanism in CoreUI modals — not found in API docs or samples; needs investigation in Phase 4 spike
-- `DownloadFileAction` streaming behavior for large files — undocumented; test required
+### Tertiary (needs runtime validation)
+- `SystemConfiguration.Instance` child key enumeration — underdocumented, needs runtime test
+- DW asset management extension point for file detail screen injector — needs DW source inspection
+- FK constraint enforcement level in DW10 ecommerce tables — needs `sys.foreign_keys` query on target DB
 
 ---
-*Research completed: 2026-03-21*
+*Research completed: 2026-03-23*
 *Ready for roadmap: yes*

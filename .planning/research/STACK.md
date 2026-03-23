@@ -1,225 +1,267 @@
 # Technology Stack
 
-**Project:** Dynamicweb.ContentSync v1.2 Admin UI
-**Researched:** 2026-03-21 (updated from 2026-03-19 original)
-**Scope:** Stack additions for admin UI integration, query configuration, context menu actions, zip packaging
+**Project:** DynamicWeb.Serializer v2.0
+**Researched:** 2026-03-23
 
----
-
-## Current Stack (v1.0/v1.1 -- Validated, DO NOT CHANGE)
+## Current Stack (Already In Place -- DO NOT Re-add)
 
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| .NET | 8.0 | Runtime target |
-| Dynamicweb | 10.23.9 | Core DW APIs (Content, Scheduling, Extensibility) |
+| .NET | 8.0 | Target framework |
+| Dynamicweb | 10.23.9 | Core CMS NuGet (includes Dynamicweb.Core, Dynamicweb.Configuration) |
+| Dynamicweb.Content.UI | 10.23.9 | Content admin UI extensions |
+| Dynamicweb.CoreUI.Rendering | 10.23.9 | CoreUI screen/command framework |
 | YamlDotNet | 13.7.1 | YAML serialization/deserialization |
-| Microsoft.Extensions.Configuration.Json | 8.0.1 | Config file reading |
+| Microsoft.Extensions.Configuration.Json | 8.0.1 | Config file loading |
+| Microsoft.Extensions.FileProviders.Embedded | 8.0.15 | Embedded wwwroot resources |
+| Microsoft.AspNetCore.App | (framework ref) | ASP.NET Core runtime |
 
----
+## Stack Additions for v2.0
 
-## Required Stack Addition for v1.2
+### No New NuGet Packages Needed
 
-### Single Package Addition: Dynamicweb.Content.UI
+The existing `Dynamicweb` 10.23.9 NuGet already bundles everything required for v2.0. The key APIs are already available through transitive dependencies:
 
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Dynamicweb.Content.UI | 10.23.9 | Admin UI screens, content tree injection, page screen types | Provides `PageEditScreen`, `PageListScreen`, content tree `NavigationSection` for context menu injection. Transitively brings in `Dynamicweb.Application.UI` (settings area/sections, `ActionBuilder`), `Dynamicweb.CoreUI` (screen bases, commands, queries, actions), and `Dynamicweb.QueryPublisher`. |
+| API | Namespace | Assembly | Purpose | Confidence |
+|-----|-----------|----------|---------|------------|
+| `Database.CreateDataReader()` | `Dynamicweb.Data` | Dynamicweb.Core.dll | Read SQL table rows | HIGH |
+| `Database.ExecuteNonQuery()` | `Dynamicweb.Data` | Dynamicweb.Core.dll | Insert/update/delete SQL rows | HIGH |
+| `Database.ExecuteScalar()` | `Dynamicweb.Data` | Dynamicweb.Core.dll | Single-value SQL queries | HIGH |
+| `CommandBuilder` | `Dynamicweb.Data` | Dynamicweb.Core.dll | Parameterized SQL (anti-injection) | HIGH |
+| `SystemConfiguration.Instance` | `Dynamicweb.Configuration` | Dynamicweb.Configuration.dll | Read/write GlobalSettings | HIGH |
+| `EditScreenBase<T>` | `Dynamicweb.CoreUI.Screens` | Dynamicweb.CoreUI.dll | Admin UI edit screens | HIGH |
+| `ListScreenBase<T>` | `Dynamicweb.CoreUI.Screens` | Dynamicweb.CoreUI.dll | Admin UI list screens (log viewer) | HIGH |
+| `CommandBase<T>` / `CommandBase` | `Dynamicweb.CoreUI.Data` | Dynamicweb.CoreUI.dll | Admin UI commands | HIGH |
+| `DataQueryModelBase<T>` | `Dynamicweb.CoreUI.Data` | Dynamicweb.CoreUI.dll | Admin UI data queries | HIGH |
+| `NavigationNodeProvider<T>` | `Dynamicweb.CoreUI` | Dynamicweb.CoreUI.dll | Admin tree node registration | HIGH |
 
-**Confidence:** HIGH -- verified via NuGet dependency chain AND assembly reflection on test instance DLLs at `C:\Projects\Solutions\swift.test.forsync\Swift2.1\Dynamicweb.Host.Suite\bin\Debug\net8.0\`.
+**Rationale:** DynamicWeb 10 follows a "batteries included" model -- the `Dynamicweb` NuGet meta-package brings in `Dynamicweb.Core`, `Dynamicweb.Configuration`, and all other sub-assemblies. Adding Dapper, EF Core, or any external ORM would be wrong -- DW10 apps use `CommandBuilder` + `Database` for SQL access. This is the canonical pattern shown in official DW10 training materials and the AppStore app guide.
 
-### Transitive Dependency Chain
+### Why NOT Add External Libraries
 
-Adding `Dynamicweb.Content.UI` brings the full admin UI dependency chain:
+| Library | Why Not |
+|---------|---------|
+| Dapper / EF Core | DW10 has its own `Database` + `CommandBuilder` pattern. Adding an ORM would conflict with DW's connection management and not participate in DW's built-in performance logging. |
+| System.Data.SqlClient | Already a transitive dependency of Dynamicweb.Core. Do not add directly. |
+| Newtonsoft.Json / System.Text.Json | DataGroup XML files are parsed with `System.Xml.Linq` (built-in). Settings are read via `SystemConfiguration.Instance`. No JSON parsing needed beyond what's already in the project. |
+| Any logging framework | DW10 has built-in logging. The v1.x `Action<string>` log callback pattern works well and writes to flat files. For the log viewer, we read those files -- no structured logging library needed. |
+| Any DI container | DW10 uses `Services.Xxx` static accessors and its own service resolution. Provider instances are created by our own factory, not a container. |
 
-```
-Dynamicweb.Content.UI (10.23.9)
-  +-- Dynamicweb.Application.UI (10.23.9)     -- AreasSection, SettingsArea, ActionBuilder
-  |     +-- Dynamicweb.CoreUI (10.23.9)       -- EditScreenBase, ListScreenBase, ScreenInjector,
-  |     |                                        CommandBase, DataQueryModelBase, NavigationNodeProvider,
-  |     |                                        DownloadFileAction, RunCommandAction, FileResult
-  |     +-- Dynamicweb (10.23.9)              -- Already have this
-  |     +-- Dynamicweb.DataIntegration         -- Transitive, not directly used
-  |     +-- Dynamicweb.Forms                   -- Transitive, not directly used
-  |     +-- Dynamicweb.Marketplace             -- Transitive, not directly used
-  +-- Dynamicweb.CoreUI (10.23.9)             -- (same as above, deduplicated)
-  +-- Dynamicweb.Files.UI (10.23.9)           -- Transitive, not directly used
-  +-- Dynamicweb.QueryPublisher (10.23.9)     -- Query expression infrastructure
-```
+## Core APIs for Each Provider Type
 
-### No Other NuGet Packages Needed
+### SqlTableProvider -- `Dynamicweb.Data` Namespace
 
-| Capability | Provided By | Notes |
-|------------|-------------|-------|
-| Settings edit screen | `Dynamicweb.CoreUI` (transitive) | `EditScreenBase<T>` |
-| Predicate list screen | `Dynamicweb.CoreUI` (transitive) | `ListScreenBase<T>` |
-| Tree navigation node | `Dynamicweb.CoreUI` (transitive) | `NavigationNodeProvider<T>` |
-| Screen injection | `Dynamicweb.CoreUI` (transitive) | `ScreenInjector<T>`, `ListScreenInjector<TScreen,TModel>` |
-| Settings area sections | `Dynamicweb.Application.UI` (transitive) | `AreasSection`, `SettingsArea` |
-| ActionBuilder helper | `Dynamicweb.Application.UI` (transitive) | `ActionBuilder` for Edit/Delete actions |
-| Content tree page screens | `Dynamicweb.Content.UI` (direct) | `PageEditScreen`, `PageListScreen` to inject into |
-| Download file action | `Dynamicweb.CoreUI` (transitive) | `DownloadFileAction` for zip download |
-| Run command action | `Dynamicweb.CoreUI` (transitive) | `RunCommandAction` for serialize/deserialize |
-| Confirm action dialog | `Dynamicweb.CoreUI` (transitive) | `ConfirmAction` for destructive operations |
-| Open dialog action | `Dynamicweb.CoreUI` (transitive) | `OpenDialogAction` for upload prompts |
-| File upload editor | `Dynamicweb.CoreUI` (transitive) | `FileUpload` input editor |
-| File result for downloads | `Dynamicweb.CoreUI` (transitive) | `FileResult` return type from commands |
-| Data model base | `Dynamicweb.CoreUI` (transitive) | `DataViewModelBase` |
-| Mapping configuration | `Dynamicweb` (existing) | `MappingConfigurationBase` |
-| ZIP packaging | .NET 8.0 BCL | `System.IO.Compression.ZipFile` -- built-in |
+The workhorse for ~74 data groups. Uses DW10's canonical database access pattern.
 
----
+**Serialize (read all rows):**
+```csharp
+using Dynamicweb.Data;
 
-## Key Namespaces and Classes by Feature
-
-### Settings Screen (Settings > Content > Sync)
-
-| Class | Namespace | Purpose |
-|-------|-----------|---------|
-| `EditScreenBase<T>` | `Dynamicweb.CoreUI.Screens` | Base class for settings edit form |
-| `DataViewModelBase` | `Dynamicweb.CoreUI.Data` | Base class for screen data models |
-| `CommandBase<T>` | `Dynamicweb.CoreUI.Data` | Base class for save command |
-| `DataQueryModelBase<T>` | `Dynamicweb.CoreUI.Data` | Base class for loading settings data |
-| `[ConfigurableProperty]` | `Dynamicweb.CoreUI.Data` | Attribute for editable model fields |
-| `IIdentifiable` | `Dynamicweb.CoreUI.Data` | Interface for models with identity |
-
-### Tree Navigation (Settings > Content > Sync node)
-
-| Class | Namespace | Purpose |
-|-------|-----------|---------|
-| `NavigationNodeProvider<T>` | `Dynamicweb.CoreUI.Navigation` | Add "Sync" node to Settings > Content section |
-| `NavigationNodePathProvider<T>` | `Dynamicweb.CoreUI.Navigation` | Breadcrumb/highlight tracking for current node |
-| `NavigationNode` | `Dynamicweb.CoreUI.Navigation` | Individual tree node definition |
-| `NavigationNodePath` | `Dynamicweb.CoreUI.Navigation` | Node path for identification |
-| `NavigateScreenAction` | `Dynamicweb.CoreUI.Actions.Implementations` | Navigate to screen on node click |
-| `AreasSection` | `Dynamicweb.Application.UI` | Parent section type parameter for `NavigationNodeProvider<AreasSection>` |
-| `SettingsArea` | `Dynamicweb.Application.UI` | Settings area reference for node path |
-
-### Content Tree Context Menu Actions (Serialize/Deserialize)
-
-| Class | Namespace | Purpose |
-|-------|-----------|---------|
-| `ScreenInjector<T>` | `Dynamicweb.CoreUI.Screens` | Inject actions into existing page screens |
-| `ListScreenInjector<TScreen,TModel>` | `Dynamicweb.CoreUI.Screens` | Inject into list screen context menus |
-| `ActionNode` | `Dynamicweb.CoreUI.Actions` | Context menu item definition |
-| `ActionGroup` | `Dynamicweb.CoreUI.Actions` | Group of context menu items |
-| `RunCommandAction` | `Dynamicweb.CoreUI.Actions.Implementations` | Execute serialize/deserialize command |
-| `ConfirmAction` | `Dynamicweb.CoreUI.Actions.Implementations` | Confirmation before destructive operations |
-| `DownloadFileAction` | `Dynamicweb.CoreUI.Actions.Implementations` | Trigger browser file download for zip |
-| `OpenDialogAction` | `Dynamicweb.CoreUI.Actions.Implementations` | Open upload dialog for deserialize zip |
-| `FileResult` | `Dynamicweb.CoreUI.Data` | Return type for file download commands |
-| `FileUpload` | `Dynamicweb.CoreUI.Editors.Inputs` | File upload widget for zip import |
-| `Icon` | `Dynamicweb.CoreUI.Icons` | Icon enum for context menu items |
-| `PageListScreen` | `Dynamicweb.Content.UI.Screens` | Content tree list screen to inject into |
-| `PageEditScreen` | `Dynamicweb.Content.UI.Screens` | Page editor screen to inject into |
-| `ActionBuilder` | `Dynamicweb.Application.UI.Helpers` | Helper for building edit/delete actions |
-
-### Data Mapping
-
-| Class | Namespace | Purpose |
-|-------|-----------|---------|
-| `MappingConfigurationBase` | `Dynamicweb.Extensibility.Mapping` | Auto-mapping between domain/view models |
-| `MappingService` | `Dynamicweb.Extensibility.Mapping` | Execute mappings at runtime |
-
----
-
-## Project File Change
-
-### Exact Diff
-
-```diff
-  <ItemGroup>
-    <PackageReference Include="Dynamicweb" Version="10.23.9" />
-+   <PackageReference Include="Dynamicweb.Content.UI" Version="10.23.9" />
-    <PackageReference Include="YamlDotNet" Version="13.7.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
-  </ItemGroup>
+var cmd = new CommandBuilder();
+cmd.Add($"SELECT * FROM [{tableName}]");
+using var reader = Database.CreateDataReader(cmd);
+while (reader.Read())
+{
+    // Read each column by name, build Dictionary<string, object>
+    for (int i = 0; i < reader.FieldCount; i++)
+    {
+        var name = reader.GetName(i);
+        var value = reader.IsDBNull(i) ? null : reader.GetValue(i);
+        row[name] = value;
+    }
+}
 ```
 
-**One line added.** `Dynamicweb.Content.UI` at `10.23.9` to match the existing `Dynamicweb` version pin.
+**Deserialize (upsert by NameColumn or PK):**
+```csharp
+// Match by NameColumn (from DataGroup XML config)
+var matchCmd = CommandBuilder.Create(
+    $"SELECT COUNT(*) FROM [{tableName}] WHERE [{nameColumn}] = {{0}}", nameValue);
+var exists = Convert.ToInt32(Database.ExecuteScalar(matchCmd)) > 0;
 
-### SDK Type: Keep `Microsoft.NET.Sdk` (NOT Razor SDK)
+if (exists)
+{
+    // UPDATE with parameterized CommandBuilder
+    var updateCmd = new CommandBuilder();
+    updateCmd.Add($"UPDATE [{tableName}] SET ");
+    // ... build SET clauses with {N} placeholders ...
+    updateCmd.Add($" WHERE [{nameColumn}] = {{0}}", nameValue);
+    Database.ExecuteNonQuery(updateCmd);
+}
+else
+{
+    // INSERT with parameterized CommandBuilder
+    var insertCmd = new CommandBuilder();
+    insertCmd.Add($"INSERT INTO [{tableName}] (...)  VALUES (...)");
+    Database.ExecuteNonQuery(insertCmd);
+}
+```
 
-The ExpressDelivery sample uses `Microsoft.NET.Sdk.Razor` because it ships custom Razor widget views with embedded `wwwroot` resources. ContentSync admin UI uses only standard `EditScreenBase`/`ListScreenBase` screens rendered by DW's built-in CoreUI rendering pipeline. No custom Razor views needed.
+**Key facts (HIGH confidence, from DW10 training docs):**
+- `CommandBuilder` handles parameterization -- `{0}`, `{1}` placeholders become `@p0`, `@p1` SQL parameters
+- `Database.CreateDataReader()` returns `IDataReader` -- standard ADO.NET pattern
+- `Database.ExecuteNonQuery()` returns affected row count
+- `Database.ExecuteScalar()` returns single value
+- No connection management needed -- `Database` class handles connection pool internally
 
----
+### SettingsProvider -- `Dynamicweb.Configuration` Namespace
 
-## What NOT to Add
+For ~20 settings-based data groups. Each has `KeyPatterns` like `/Globalsettings/Modules/Users`.
 
-| Do NOT Add | Why Not | What We Use Instead |
-|------------|---------|---------------------|
-| `Microsoft.NET.Sdk.Razor` (SDK change) | Only needed for custom widget rendering with embedded Razor views. Our screens are declarative C# | `Microsoft.NET.Sdk` (existing) |
-| `IRenderingBundle` marker class | Only needed when shipping custom Razor components with embedded wwwroot | Not needed -- no custom rendering |
-| `Microsoft.AspNetCore.Components.Web` | Blazor/Razor component library, not needed for admin screens | Standard CoreUI screen builder |
-| `Microsoft.Extensions.FileProviders.Embedded` | Only for embedded static files (CSS, JS, images) | No embedded assets needed |
-| `FrameworkReference Microsoft.AspNetCore.App` | Only for apps that host ASP.NET; we're a library loaded into DW host | Already loaded by DW host process |
-| `GenerateEmbeddedFilesManifest` / `EmbeddedResource` | Only for Razor SDK embedded content | No embedded content |
-| `Dynamicweb.Suite.Ring1` | Meta-package pulling 20+ packages (Ecommerce.UI, Products.UI, Insights.UI, etc.) -- massive overkill for a content-only tool | `Dynamicweb.Content.UI` (single targeted package) |
-| `Dynamicweb.CoreUI` (direct reference) | Missing `PageListScreen`/`PageEditScreen` for context menu injection and `AreasSection`/`SettingsArea` for settings tree | `Dynamicweb.Content.UI` brings CoreUI transitively |
-| `SharpZipLib` / `DotNetZip` | External ZIP libraries. .NET 8 BCL `System.IO.Compression.ZipFile` handles all our needs | `System.IO.Compression.ZipFile` (built-in) |
+**Serialize (read settings):**
+```csharp
+using Dynamicweb.Configuration;
 
----
+// KeyPatterns from config, comma-separated
+var patterns = "/Globalsettings/Modules/Users,/Globalsettings/Modules/UserManagement";
+foreach (var pattern in patterns.Split(','))
+{
+    var value = SystemConfiguration.Instance.GetValue(pattern.Trim());
+    // Serialize key-value pairs to YAML
+}
+```
 
-## Alternatives Considered
+**Deserialize (write settings):**
+```csharp
+SystemConfiguration.Instance.SetValue("/Globalsettings/Modules/Users/Setting1", "value");
+```
 
-| Category | Recommended | Alternative | Why Not |
-|----------|-------------|-------------|---------|
-| UI package | `Dynamicweb.Content.UI` | `Dynamicweb.Suite.Ring1` | Ring1 transitively pulls 20+ packages including Ecommerce, Products, Insights, Integration etc. ContentSync only touches content -- no reason to depend on the full suite. |
-| UI package | `Dynamicweb.Content.UI` | `Dynamicweb.CoreUI` (direct) | CoreUI alone lacks `PageListScreen`/`PageEditScreen` types needed for content tree context menu injection. Also misses `AreasSection`/`SettingsArea` from Application.UI. |
-| ZIP library | `System.IO.Compression` (BCL) | SharpZipLib, DotNetZip | Built-in .NET 8 `ZipFile`/`ZipArchive` classes handle create-from-directory and extract. Zero additional dependency. |
-| SDK type | `Microsoft.NET.Sdk` | `Microsoft.NET.Sdk.Razor` | No custom Razor views. All screens use DW's declarative C# screen builder pattern. |
+**Key facts (MEDIUM confidence -- API exists but bulk enumeration needs investigation):**
+- `SystemConfiguration.Instance.GetValue(path)` returns string value for exact path
+- `SystemConfiguration.Instance.SetValue(path, value)` persists to GlobalSettings.config
+- Need to investigate at implementation time: How to enumerate all child keys under a pattern prefix. May need direct XML parsing of `GlobalSettings.config` as fallback.
 
----
+### SchemaProvider -- `Dynamicweb.Data` Namespace
 
-## Version Pinning Rationale
+For ~5 schema data groups. Exports SQL table column definitions.
 
-All DW packages pinned to exact `10.23.9` because:
+**Serialize (read schema):**
+```csharp
+// Use SQL Server INFORMATION_SCHEMA to read table structure
+var cmd = CommandBuilder.Create(
+    "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE " +
+    "FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = {0}", tableName);
+using var reader = Database.CreateDataReader(cmd);
+```
 
-1. **Consistency** -- matches existing `Dynamicweb` pin; prevents diamond dependency version conflicts
-2. **Test environment match** -- Swift 2.1/2.2 test instances run `10.23.9` (verified via `deps.json`)
-3. **Reproducible builds** -- floating versions (`*`) cause "works on my machine" issues
-4. **DW coupling** -- DW packages at mismatched versions can have breaking internal API changes
+**Deserialize (apply schema -- additive only):**
+```csharp
+// ALTER TABLE to add missing columns -- never drop columns (safety)
+var alterCmd = CommandBuilder.Create(
+    $"ALTER TABLE [{tableName}] ADD [{columnName}] [{dataType}]");
+Database.ExecuteNonQuery(alterCmd);
+```
 
-The ExpressDelivery sample uses `Version="*"` but that is a sample convention, not a production practice.
+**Key facts (HIGH confidence -- standard SQL Server metadata):**
+- `INFORMATION_SCHEMA.COLUMNS` is reliable for column metadata
+- Schema deserialization should be additive-only (add columns, never drop)
+- This matches DW10's own `UpdateProvider` pattern for safe schema evolution
 
----
+### ContentProvider -- Already Built
+
+The existing `ContentSerializer`/`ContentDeserializer` use `Services.Pages`, `Services.Grids`, `Services.Paragraphs`, `Services.Items`. These wrap into the provider interface with no new APIs.
+
+## Admin UI Patterns for Log Viewer
+
+The log viewer uses the existing DW10 CoreUI list screen pattern.
+
+**Screen type:** `ListScreenBase<LogEntryModel>` -- table with timestamp, level, message columns.
+
+**Data source:** Parse `Files/System/ContentSync/Log/ContentSync.log`. The existing log format is `[timestamp] message`. For guided advice, the provider pipeline writes structured markers like `[ADVICE:MISSING_GROUP:Account Admin]` that the log viewer parses and renders as actionable guidance.
+
+**No new infrastructure needed.** The existing `ListScreenBase` pattern (proven in `PredicateListScreen`) provides filtering, pagination, and context actions. The log viewer is a read-only list screen.
+
+**Navigation:** Register under `Settings > Database > Serialize > Log` using `NavigationNodeProvider` (same pattern as existing `SyncSettingsNodeProvider`).
+
+## Configuration Extension for v2.0
+
+The existing `ContentSync.config.json` (renamed to `Serializer.config.json`) extends with provider definitions:
+
+```json
+{
+  "providers": [
+    {
+      "type": "SqlTable",
+      "name": "EcomOrderFlow",
+      "table": "EcomOrderFlow",
+      "nameColumn": "OrderFlowName",
+      "enabled": true
+    },
+    {
+      "type": "Settings",
+      "name": "LanguageManagement",
+      "keyPatterns": ["/Globalsettings/Modules/LanguageManagement"],
+      "enabled": true
+    },
+    {
+      "type": "Schema",
+      "name": "EcomProducts_Schema",
+      "table": "EcomProducts",
+      "enabled": true
+    },
+    {
+      "type": "Content",
+      "name": "ContentSync",
+      "predicates": ["...existing predicate format..."],
+      "enabled": true
+    }
+  ]
+}
+```
+
+Uses the existing `Microsoft.Extensions.Configuration.Json` package -- no new dependency.
+
+## Version Compatibility
+
+| Package | Current | Latest Stable | Action |
+|---------|---------|---------------|--------|
+| Dynamicweb | 10.23.9 | 10.23.9+ | Keep. Only upgrade if specific API is missing. |
+| Dynamicweb.Content.UI | 10.23.9 | 10.23.9+ | Keep. |
+| Dynamicweb.CoreUI.Rendering | 10.23.9 | 10.23.9+ | Keep. |
+| YamlDotNet | 13.7.1 | 16.x | **Keep 13.7.1.** v14+ has breaking API changes. Upgrade is unnecessary risk. |
+| Microsoft.Extensions.Configuration.Json | 8.0.1 | 8.0.1 | Keep. Matches .NET 8.0 SDK. |
+
+**YamlDotNet version note (HIGH confidence):** YamlDotNet 14.0.0 introduced breaking changes to the serializer API. The project uses `ISerializer`, `IDeserializer`, `SerializerBuilder`, and `DeserializerBuilder` which work on 13.x but changed in 14.x. Staying on 13.7.1 avoids unnecessary rework with no benefit.
 
 ## Installation
 
-```bash
-cd src/Dynamicweb.ContentSync
-dotnet add package Dynamicweb.Content.UI --version 10.23.9
-```
+No new packages to install. The existing `.csproj` already has everything needed.
 
----
+If renaming from `Dynamicweb.ContentSync` to `DynamicWeb.Serializer`:
+
+```xml
+<!-- Only changes to .csproj -->
+<RootNamespace>DynamicWeb.Serializer</RootNamespace>
+<AssemblyName>DynamicWeb.Serializer</AssemblyName>
+<PackageId>DynamicWeb.Serializer</PackageId>
+```
 
 ## Sources
 
-- [NuGet: Dynamicweb.Content.UI](https://www.nuget.org/packages/Dynamicweb.Content.UI/) -- dependency chain verified (HIGH)
-- [NuGet: Dynamicweb.Application.UI](https://www.nuget.org/packages/Dynamicweb.Application.UI/) -- AreasSection, SettingsArea, ActionBuilder confirmed (HIGH)
-- [NuGet: Dynamicweb.CoreUI](https://www.nuget.org/packages/Dynamicweb.CoreUI/) -- screen/command/query base classes (HIGH)
-- [NuGet: Dynamicweb.Suite.Ring1](https://www.nuget.org/packages/Dynamicweb.Suite.Ring1/) -- evaluated and rejected as too heavy (HIGH)
-- [NuGet: Dynamicweb.Suite](https://www.nuget.org/packages/Dynamicweb.Suite/10.23.9) -- full dependency list inspected (HIGH)
-- [DW10 AppStore App Guide](https://doc.dynamicweb.dev/documentation/extending/guides/newappstoreapp.html) -- extension patterns (HIGH)
-- [DW10 Screen Types](https://doc.dynamicweb.dev/documentation/extending/administration-ui/screentypes.html) -- UI concepts (MEDIUM)
-- Assembly reflection on `Dynamicweb.Content.UI.dll`, `Dynamicweb.CoreUI.dll`, `Dynamicweb.Application.UI.dll` from test instance at `C:\Projects\Solutions\swift.test.forsync\Swift2.1\Dynamicweb.Host.Suite\bin\Debug\net8.0\` (HIGH)
-- ExpressDelivery sample at `C:\Projects\temp\dwextensionsample\Samples-main\ExpressDelivery\` -- verified patterns for NavigationNodeProvider, EditScreenBase, ListScreenBase, ScreenInjector, Commands, Queries, MappingConfiguration (HIGH)
-
----
+- [DW10 Core Concepts Training -- CommandBuilder, Database class](https://doc.dynamicweb.com/training/training/certifications/t3-platform-developer/t3-platform-developer/3-1-core-concepts) -- HIGH confidence
+- [Database.CreateDataReader API docs](https://doc.dynamicweb.com/api/html/3f81ddaa-7137-def0-bb93-83f274fe73f9.htm) -- HIGH confidence
+- [SystemConfiguration API docs](http://doc.dynamicweb.com/api/html/a150d119-f56f-9f3a-1995-572597c924fc.htm) -- HIGH confidence
+- [DW10 AppStore App Guide -- full CRUD pattern with CommandBuilder](https://doc.dynamicweb.dev/documentation/extending/guides/newappstoreapp.html) -- HIGH confidence
+- [DW10 Screen Types documentation](https://doc.dynamicweb.dev/documentation/extending/administration-ui/screentypes.html) -- HIGH confidence
+- [Dynamicweb.Core NuGet -- confirms Database/CommandBuilder APIs](https://www.nuget.org/packages/Dynamicweb.Core/10.19.14) -- HIGH confidence
+- [Dynamicweb.Configuration Namespace docs](https://doc.dynamicweb.com/api/html/1ec943e0-397f-74c3-550c-b9195922a2db.htm) -- MEDIUM confidence
+- DataGroup XML files at `C:\temp\DataGroups\` -- direct inspection, HIGH confidence
 
 ## Confidence Assessment
 
-| Area | Confidence | Rationale |
-|------|------------|-----------|
-| Package dependency (Content.UI) | HIGH | Verified NuGet dependency page + assembly inspection of test instance |
-| Transitive chain | HIGH | Verified via NuGet dependency pages for each package in chain |
-| Class/namespace locations | HIGH | Verified via .NET reflection on actual DLLs from test instance |
-| No Razor SDK needed | HIGH | ExpressDelivery only uses Razor for custom widget rendering; our screens are declarative C# |
-| ZIP via BCL | HIGH | `System.IO.Compression.ZipFile` is .NET 8 built-in |
-| Version pinning at 10.23.9 | HIGH | Matches existing Dynamicweb pin and test instance versions (deps.json) |
-| ScreenInjector for context menus | MEDIUM | Pattern confirmed from ExpressDelivery `OrderOverviewInjector`; applying to `PageListScreen` uses same pattern but needs runtime verification |
-| Query expression UI reuse | LOW | `Dynamicweb.QueryPublisher` comes transitively; specific query expression editor reuse patterns need investigation during implementation |
+| Area | Confidence | Notes |
+|------|------------|-------|
+| SQL access via CommandBuilder/Database | HIGH | Official training docs + AppStore guide + API reference all confirm |
+| Settings access via SystemConfiguration | MEDIUM | API exists and documented; bulk key enumeration under prefix needs runtime validation |
+| Admin UI via CoreUI screens | HIGH | Already proven in v1.x with ListScreenBase and EditScreenBase |
+| YamlDotNet compatibility | HIGH | Already working in v1.x; no upgrade needed |
+| No new NuGet packages | HIGH | All required APIs ship with existing Dynamicweb 10.23.9 |
+| Schema via INFORMATION_SCHEMA | HIGH | Standard SQL Server metadata pattern |
 
----
+## Open Questions for Phase-Specific Research
 
-*Stack research for: Dynamicweb.ContentSync v1.2 Admin UI milestone*
-*Updated: 2026-03-21*
+1. **Settings key enumeration:** Can `SystemConfiguration.Instance` enumerate all child keys under a path prefix (e.g., list all keys under `/Globalsettings/Modules/Users/`)? Or do we need to parse the raw `GlobalSettings.config` XML file? Affects SettingsProvider implementation.
+
+2. **ServiceCaches from DataGroup XMLs:** Some DataGroups declare `<ServiceCache>` entries (e.g., `Dynamicweb.Ecommerce.Orders.Discounts.DiscountService`). After deserialization, should we clear these caches? If so, how? Post-deserialize concern.
+
+3. **Transaction scope for SQL deserialization:** The `Database` class supports transactions via `Database.CreateConnection()` + `connection.BeginTransaction()`. Should SqlTableProvider wrap each table's deserialization in a transaction for atomicity? Needs testing with large tables.
