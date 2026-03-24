@@ -12,8 +12,14 @@ public record ProviderPredicateDefinition
     /// <summary>Provider type to route to (e.g., "Content", "SqlTable").</summary>
     public required string ProviderType { get; init; }
 
-    /// <summary>DataGroup ID for SqlTable predicates (e.g., "Settings_Ecommerce_Orders_060_OrderFlows").</summary>
-    public string? DataGroupId { get; init; }
+    /// <summary>SQL table name for SqlTable predicates (e.g., "EcomOrderFlow").</summary>
+    public string? Table { get; init; }
+
+    /// <summary>Column used as natural key for row identity (e.g., "OrderFlowName"). Empty = use composite PK.</summary>
+    public string? NameColumn { get; init; }
+
+    /// <summary>Comma-separated columns used for change detection. Empty = use all non-identity columns.</summary>
+    public string? CompareColumns { get; init; }
 
     /// <summary>Area ID for Content predicates.</summary>
     public int AreaId { get; init; } = 0;

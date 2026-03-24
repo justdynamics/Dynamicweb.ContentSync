@@ -37,8 +37,8 @@ public class SqlTableProvider : SerializationProviderBase
             };
         }
 
-        var metadata = _metadataReader.GetTableMetadata(predicate.DataGroupId!);
-        Log($"Serializing table {metadata.TableName} (DataGroup: {predicate.DataGroupId})", log);
+        var metadata = _metadataReader.GetTableMetadata(predicate);
+        Log($"Serializing table {metadata.TableName}", log);
 
         var rows = _tableReader.ReadAllRows(metadata.TableName).ToList();
         Log($"Read {rows.Count} rows from {metadata.TableName}", log);
@@ -72,7 +72,7 @@ public class SqlTableProvider : SerializationProviderBase
             };
         }
 
-        var metadata = _metadataReader.GetTableMetadata(predicate.DataGroupId!);
+        var metadata = _metadataReader.GetTableMetadata(predicate);
         var yamlRows = _fileStore.ReadAllRows(inputRoot, metadata.TableName).ToList();
         Log($"Deserializing {yamlRows.Count} rows into {metadata.TableName} (isDryRun={isDryRun})", log);
 
@@ -138,8 +138,8 @@ public class SqlTableProvider : SerializationProviderBase
         if (!string.Equals(predicate.ProviderType, "SqlTable", StringComparison.OrdinalIgnoreCase))
             return ValidationResult.Failure("Provider type mismatch");
 
-        if (string.IsNullOrEmpty(predicate.DataGroupId))
-            return ValidationResult.Failure("DataGroupId is required for SqlTable predicates");
+        if (string.IsNullOrEmpty(predicate.Table))
+            return ValidationResult.Failure("Table is required for SqlTable predicates");
 
         return ValidationResult.Success();
     }

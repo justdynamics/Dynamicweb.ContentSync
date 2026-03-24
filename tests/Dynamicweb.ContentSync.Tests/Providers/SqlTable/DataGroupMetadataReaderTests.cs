@@ -1,4 +1,5 @@
 using System.Data;
+using Dynamicweb.ContentSync.Models;
 using Dynamicweb.ContentSync.Providers.SqlTable;
 using Dynamicweb.Data;
 using Moq;
@@ -9,26 +10,19 @@ namespace Dynamicweb.ContentSync.Tests.Providers.SqlTable;
 [Trait("Category", "Phase13")]
 public class DataGroupMetadataReaderTests
 {
-    private static string FixturesPath => Path.Combine(
-        AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "Fixtures", "DataGroups");
-
     [Fact]
-    public void GetTableMetadata_ParsesXmlCorrectly()
+    public void GetTableMetadata_BuildsFromPredicateAndSchema()
     {
         // Arrange
         var mockExecutor = new Mock<ISqlExecutor>();
 
-        // Mock sp_pkeys — returns OrderFlowId as PK
         var pkReader = CreateMockReader(new[] { "COLUMN_NAME" }, new object[][] { new object[] { "OrderFlowId" } });
         var pkCalled = false;
 
-        // Mock identity columns query — returns OrderFlowId as identity
         var idReader = CreateMockReader(new[] { "COLUMN_NAME" }, new object[][] { new object[] { "OrderFlowId" } });
         var idCalled = false;
 
-        // Mock SELECT TOP 0 * — returns all column names
         var allColReader = CreateSchemaReader(new[] { "OrderFlowId", "OrderFlowName", "OrderFlowDescription" });
-        var allCalled = false;
 
         mockExecutor.Setup(x => x.ExecuteReader(It.IsAny<CommandBuilder>()))
             .Returns((CommandBuilder cb) =>
@@ -36,14 +30,22 @@ public class DataGroupMetadataReaderTests
                 var sql = cb.ToString();
                 if (!pkCalled && sql.Contains("sp_pkeys")) { pkCalled = true; return pkReader.Object; }
                 if (!idCalled && sql.Contains("INFORMATION_SCHEMA")) { idCalled = true; return idReader.Object; }
-                allCalled = true;
                 return allColReader.Object;
             });
 
-        var reader = new DataGroupMetadataReader(mockExecutor.Object, FixturesPath);
+        var reader = new DataGroupMetadataReader(mockExecutor.Object);
+
+        var predicate = new ProviderPredicateDefinition
+        {
+            Name = "Order Flows",
+            ProviderType = "SqlTable",
+            Table = "EcomOrderFlow",
+            NameColumn = "OrderFlowName",
+            CompareColumns = ""
+        };
 
         // Act
-        var metadata = reader.GetTableMetadata("Settings_Ecommerce_Orders_060_OrderFlows");
+        var metadata = reader.GetTableMetadata(predicate);
 
         // Assert
         Assert.Equal("EcomOrderFlow", metadata.TableName);
@@ -55,13 +57,20 @@ public class DataGroupMetadataReaderTests
     }
 
     [Fact]
-    public void GetTableMetadata_ThrowsForMissingDataGroup()
+    public void GetTableMetadata_ThrowsForMissingTable()
     {
         var mockExecutor = new Mock<ISqlExecutor>();
-        var reader = new DataGroupMetadataReader(mockExecutor.Object, FixturesPath);
+        var reader = new DataGroupMetadataReader(mockExecutor.Object);
+
+        var predicate = new ProviderPredicateDefinition
+        {
+            Name = "Bad Predicate",
+            ProviderType = "SqlTable",
+            Table = null
+        };
 
         Assert.Throws<InvalidOperationException>(() =>
-            reader.GetTableMetadata("NonExistent_DataGroup_Id"));
+            reader.GetTableMetadata(predicate));
     }
 
     private static Mock<IDataReader> CreateMockReader(string[] columns, object[][] rows)
@@ -99,7 +108,7 @@ public class DataGroupMetadataReaderTests
     private static Mock<IDataReader> CreateSchemaReader(string[] columnNames)
     {
         var mock = new Mock<IDataReader>();
-        mock.Setup(r => r.Read()).Returns(false); // No rows for TOP 0
+        mock.Setup(r => r.Read()).Returns(false);
         mock.Setup(r => r.FieldCount).Returns(columnNames.Length);
         for (int i = 0; i < columnNames.Length; i++)
         {

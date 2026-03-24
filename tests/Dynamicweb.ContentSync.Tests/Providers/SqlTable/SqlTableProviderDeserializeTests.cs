@@ -23,7 +23,8 @@ public class SqlTableProviderDeserializeTests
     {
         Name = "Order Flows",
         ProviderType = "SqlTable",
-        DataGroupId = "Settings_Ecommerce_Orders_060_OrderFlows"
+        Table = "EcomOrderFlow",
+        NameColumn = "OrderFlowName"
     };
 
     [Fact]
@@ -207,9 +208,9 @@ public class SqlTableProviderDeserializeTests
     {
         var mockExecutor = new Mock<ISqlExecutor>();
 
-        // DataGroupMetadataReader mock — pass required constructor args
-        var mockMetadataReader = new Mock<DataGroupMetadataReader>(mockExecutor.Object, "C:\\fake\\path") { CallBase = false };
-        mockMetadataReader.Setup(x => x.GetTableMetadata("Settings_Ecommerce_Orders_060_OrderFlows"))
+        // DataGroupMetadataReader mock
+        var mockMetadataReader = new Mock<DataGroupMetadataReader>(mockExecutor.Object) { CallBase = false };
+        mockMetadataReader.Setup(x => x.GetTableMetadata(It.IsAny<ProviderPredicateDefinition>()))
             .Returns(TestMetadata);
 
         // Set up ReadAllRows to return existing DB rows via mock reader

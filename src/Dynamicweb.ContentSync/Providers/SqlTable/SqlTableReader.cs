@@ -90,12 +90,25 @@ public class SqlTableReader
         {
             if (!first) sb.Append('|');
             first = false;
-            var value = row.TryGetValue(col, out var v) ? v?.ToString() ?? "" : "";
+            var value = row.TryGetValue(col, out var v) ? NormalizeValue(v) : "";
             sb.Append(col.ToUpperInvariant());
             sb.Append('=');
             sb.Append(value);
         }
 
         return Convert.ToHexString(MD5.HashData(Encoding.UTF8.GetBytes(sb.ToString()))).ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Normalize a value to a stable string for checksum comparison.
+    /// Handles type differences between DB reads (C# bool True) and YAML reads (string "true").
+    /// </summary>
+    private static string NormalizeValue(object? v)
+    {
+        if (v is null) return "";
+        if (v is bool b) return b ? "true" : "false";
+        // Whitespace-only strings normalize to empty (matches DW Deployment tool)
+        var s = v.ToString() ?? "";
+        return string.IsNullOrWhiteSpace(s) ? "" : s;
     }
 }

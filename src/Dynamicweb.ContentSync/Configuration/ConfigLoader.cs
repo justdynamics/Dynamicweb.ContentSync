@@ -53,10 +53,16 @@ public static class ConfigLoader
             var p = raw.Predicates[i];
             if (string.IsNullOrWhiteSpace(p.Name))
                 throw new InvalidOperationException($"Configuration is invalid: predicate[{i}] is missing required field 'name'.");
-            if (string.IsNullOrWhiteSpace(p.Path))
-                throw new InvalidOperationException($"Configuration is invalid: predicate[{i}] is missing required field 'path'.");
-            if (p.AreaId <= 0)
-                throw new InvalidOperationException($"Configuration is invalid: predicate[{i}] is missing required field 'areaId' (must be > 0).");
+
+            // SqlTable predicates don't need path/areaId — they use table/nameColumn instead
+            var isContentPredicate = string.IsNullOrEmpty(p.ProviderType) || string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase);
+            if (isContentPredicate)
+            {
+                if (string.IsNullOrWhiteSpace(p.Path))
+                    throw new InvalidOperationException($"Configuration is invalid: predicate[{i}] is missing required field 'path'.");
+                if (p.AreaId <= 0)
+                    throw new InvalidOperationException($"Configuration is invalid: predicate[{i}] is missing required field 'areaId' (must be > 0).");
+            }
         }
     }
 
@@ -92,6 +98,7 @@ public static class ConfigLoader
     private sealed class RawPredicateDefinition
     {
         public string? Name { get; set; }
+        public string? ProviderType { get; set; }
         public string? Path { get; set; }
         public int AreaId { get; set; }
         public int PageId { get; set; }
