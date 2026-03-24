@@ -12,6 +12,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
     private const string DatabaseRootId = "Settings_Database";
     internal const string SerializeNodeId = "Serializer_Settings";
     internal const string PredicatesNodeId = "Serializer_Predicates";
+    internal const string LogViewerNodeId = "Serializer_LogViewer";
 
     public override IEnumerable<NavigationNode> GetRootNodes()
     {
@@ -43,6 +44,16 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
                 HasSubNodes = false,
                 NodeAction = NavigateScreenAction.To<PredicateListScreen>()
                     .With(new PredicateListQuery())
+            };
+
+            yield return new NavigationNode
+            {
+                Id = LogViewerNodeId,
+                Name = "Log Viewer",
+                Sort = 20,
+                HasSubNodes = false,
+                NodeAction = NavigateScreenAction.To<LogViewerScreen>()
+                    .With(new LogViewerQuery())
             };
         }
     }
