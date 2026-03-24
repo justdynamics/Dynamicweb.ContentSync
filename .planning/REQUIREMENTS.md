@@ -11,7 +11,7 @@ Requirements for the DynamicWeb.Serializer milestone. Each maps to roadmap phase
 
 - [x] **PROV-01**: Pluggable ISerializationProvider interface with Serialize/Deserialize/DryRun contract
 - [x] **PROV-02**: Provider registry mapping data type strings to provider instances
-- [ ] **PROV-03**: Existing ContentSerializer/ContentDeserializer wrapped as ContentProvider adapter
+- [x] **PROV-03**: Existing ContentSerializer/ContentDeserializer wrapped as ContentProvider adapter
 - [ ] **PROV-04**: Orchestrator coordinates multiple providers based on predicate data types
 
 ### SQL Table Serialization
@@ -32,8 +32,8 @@ Requirements for the DynamicWeb.Serializer milestone. Each maps to roadmap phase
 ### Cache & Config
 
 - [ ] **CACHE-01**: DW service caches invalidated after SQL table deserialization so admin UI reflects new data
-- [ ] **CACHE-02**: Predicate definitions extended with DataType field for provider routing
-- [ ] **CACHE-03**: Existing v1.x configs without DataType default to "Content" (backward compatibility)
+- [x] **CACHE-02**: Predicate definitions extended with DataType field for provider routing
+- [x] **CACHE-03**: Existing v1.x configs without DataType default to "Content" (backward compatibility)
 
 ### Admin UX
 
@@ -85,7 +85,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | PROV-01 | Phase 13 | Complete |
 | PROV-02 | Phase 13 | Complete |
-| PROV-03 | Phase 14 | Pending |
+| PROV-03 | Phase 14 | Complete |
 | PROV-04 | Phase 14 | Pending |
 | SQL-01 | Phase 13 | Complete |
 | SQL-02 | Phase 13 | Complete |
@@ -97,8 +97,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ECOM-03 | Phase 15 | Pending |
 | ECOM-04 | Phase 15 | Pending |
 | CACHE-01 | Phase 15 | Pending |
-| CACHE-02 | Phase 14 | Pending |
-| CACHE-03 | Phase 14 | Pending |
+| CACHE-02 | Phase 14 | Complete |
+| CACHE-03 | Phase 14 | Complete |
 | UX-01 | Phase 16 | Pending |
 | UX-02 | Phase 16 | Pending |
 | UX-03 | Phase 16 | Pending |
