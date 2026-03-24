@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: DynamicWeb.Serializer
 status: unknown
-stopped_at: Completed 16-04-PLAN.md
-last_updated: "2026-03-24T13:14:45.001Z"
+stopped_at: Completed 16-05-PLAN.md
+last_updated: "2026-03-24T14:59:07.136Z"
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 12
+  completed_plans: 12
 ---
 
 # Project State
@@ -61,6 +61,7 @@ Plan: Not started
 | Phase 16-02 P02 | 5min | 2 tasks | 10 files |
 | Phase 16-03 P03 | 4min | 2 tasks | 5 files |
 | Phase 16 P04 | 6min | 2 tasks | 7 files |
+| Phase 16-admin-ux P05 | 1min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,7 @@ Recent decisions affecting current work:
 - [Phase 16-03]: Read-only EditScreenBase via null GetSaveCommand for display-only screens
 - [Phase 16]: PromptScreenBase for confirmation dialog with dry-run-on-load and confirm-to-execute pattern
 - [Phase 16]: IsPathUnderDirectory/IsZipExtension extracted as public static for direct unit testing
+- [Phase 16-admin-ux]: webRoot = Directory.GetParent(filesRoot) for DW virtual path resolution (avoids doubled /Files/ segment)
 
 ### Pending Todos
 
@@ -105,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T13:09:18.017Z
-Stopped at: Completed 16-04-PLAN.md
+Last session: 2026-03-24T14:59:07.133Z
+Stopped at: Completed 16-05-PLAN.md
 Resume file: None

@@ -147,5 +147,5 @@ Plans:
 | 13. Provider Foundation + SqlTableProvider Proof | v2.0 | 3/3 | Complete    | 2026-03-23 |
 | 14. Content Migration + Orchestrator | v2.0 | 2/2 | Complete    | 2026-03-24 |
 | 15. Ecommerce Tables at Scale | v2.0 | 2/2 | Complete    | 2026-03-24 |
-| 16. Admin UX + Rename | v2.0 | 4/4 | Complete    | 2026-03-24 |
+| 16. Admin UX + Rename | v2.0 | 5/5 | Complete   | 2026-03-24 |
 | 17. Project Rename | v2.0 | N/A | Absorbed into P16 | - |
