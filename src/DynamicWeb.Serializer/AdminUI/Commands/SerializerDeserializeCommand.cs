@@ -1,4 +1,6 @@
 using DynamicWeb.Serializer.Configuration;
+using DynamicWeb.Serializer.Infrastructure;
+using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers;
 using Dynamicweb.CoreUI.Data;
 
@@ -14,11 +16,18 @@ namespace DynamicWeb.Serializer.AdminUI.Commands;
 public sealed class SerializerDeserializeCommand : CommandBase
 {
     private string? _logFile;
+    private readonly List<string> _logLines = new();
 
     private void Log(string message)
     {
-        if (_logFile == null) return;
-        try { File.AppendAllText(_logFile, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}\n"); } catch { }
+        _logLines.Add($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}");
+    }
+
+    private void FlushLog(string logFile, LogFileSummary summary)
+    {
+        LogFileWriter.WriteSummaryHeader(logFile, summary);
+        foreach (var line in _logLines)
+            File.AppendAllText(logFile, line + "\n");
     }
 
     public override CommandResult Handle()
@@ -35,7 +44,7 @@ public sealed class SerializerDeserializeCommand : CommandBase
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = config.EnsureDirectories(systemDir);
 
-            _logFile = Path.Combine(paths.Log, "Serializer.log");
+            _logFile = LogFileWriter.CreateLogFile(paths.Log, "Deserialize");
             Log("=== Serializer Deserialize (API) started ===");
 
             if (!Directory.Exists(paths.SerializeRoot))
@@ -47,6 +56,32 @@ public sealed class SerializerDeserializeCommand : CommandBase
 
             var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
             var result = orchestrator.DeserializeAll(config.Predicates, paths.SerializeRoot, Log, config.DryRun);
+
+            // Build summary with advice and flush log
+            var advice = AdviceGenerator.GenerateAdvice(result);
+            var summary = new LogFileSummary
+            {
+                Operation = "Deserialize",
+                Timestamp = DateTime.UtcNow,
+                DryRun = config.DryRun,
+                Predicates = result.DeserializeResults.Select(r => new PredicateSummary
+                {
+                    Name = r.TableName,
+                    Table = r.TableName,
+                    Created = r.Created,
+                    Updated = r.Updated,
+                    Skipped = r.Skipped,
+                    Failed = r.Failed,
+                    Errors = r.Errors.ToList()
+                }).ToList(),
+                TotalCreated = result.DeserializeResults.Sum(r => r.Created),
+                TotalUpdated = result.DeserializeResults.Sum(r => r.Updated),
+                TotalSkipped = result.DeserializeResults.Sum(r => r.Skipped),
+                TotalFailed = result.DeserializeResults.Sum(r => r.Failed),
+                Errors = result.Errors.ToList(),
+                Advice = advice
+            };
+            FlushLog(_logFile, summary);
 
             var message = result.Summary;
             if (result.HasErrors)

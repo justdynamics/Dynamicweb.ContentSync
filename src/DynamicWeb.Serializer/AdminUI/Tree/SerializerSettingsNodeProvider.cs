@@ -6,12 +6,11 @@ using Dynamicweb.CoreUI.Navigation;
 
 namespace DynamicWeb.Serializer.AdminUI.Tree;
 
-public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<AreasSection>
+public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<SystemSection>
 {
-    // The Content root node ID from Dynamicweb.Content.UI.SettingsNodeProvider
-    // This is constructed from $"{PREFIX}Settings" where PREFIX = "Content_"
-    private const string ContentRootId = "Content_Settings";
-    internal const string SyncNodeId = "Serializer_Settings";
+    // The Database root node ID under Settings > System > Database
+    private const string DatabaseRootId = "Settings_Database";
+    internal const string SerializeNodeId = "Serializer_Settings";
     internal const string PredicatesNodeId = "Serializer_Predicates";
 
     public override IEnumerable<NavigationNode> GetRootNodes()
@@ -22,11 +21,11 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Area
 
     public override IEnumerable<NavigationNode> GetSubNodes(NavigationNodePath parentNodePath)
     {
-        if (parentNodePath.Last == ContentRootId)
+        if (parentNodePath.Last == DatabaseRootId)
         {
             yield return new NavigationNode
             {
-                Id = SyncNodeId,
+                Id = SerializeNodeId,
                 Name = "Serialize",
                 Sort = 100,
                 HasSubNodes = true,
@@ -34,7 +33,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Area
                     .With(new SerializerSettingsQuery())
             };
         }
-        else if (parentNodePath.Last == SyncNodeId)
+        else if (parentNodePath.Last == SerializeNodeId)
         {
             yield return new NavigationNode
             {

@@ -1,4 +1,6 @@
 using DynamicWeb.Serializer.Configuration;
+using DynamicWeb.Serializer.Infrastructure;
+using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers;
 using Dynamicweb.CoreUI.Data;
 
@@ -14,11 +16,18 @@ namespace DynamicWeb.Serializer.AdminUI.Commands;
 public sealed class SerializerSerializeCommand : CommandBase
 {
     private string? _logFile;
+    private readonly List<string> _logLines = new();
 
     private void Log(string message)
     {
-        if (_logFile == null) return;
-        try { File.AppendAllText(_logFile, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}\n"); } catch { }
+        _logLines.Add($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}");
+    }
+
+    private void FlushLog(string logFile, LogFileSummary summary)
+    {
+        LogFileWriter.WriteSummaryHeader(logFile, summary);
+        foreach (var line in _logLines)
+            File.AppendAllText(logFile, line + "\n");
     }
 
     public override CommandResult Handle()
@@ -38,7 +47,7 @@ public sealed class SerializerSerializeCommand : CommandBase
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = config.EnsureDirectories(systemDir);
 
-            _logFile = Path.Combine(paths.Log, "Serializer.log");
+            _logFile = LogFileWriter.CreateLogFile(paths.Log, "Serialize");
             Log("=== Serializer Serialize (API) started ===");
 
             var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
@@ -47,6 +56,23 @@ public sealed class SerializerSerializeCommand : CommandBase
             var fileCount = Directory.Exists(paths.SerializeRoot)
                 ? Directory.GetFiles(paths.SerializeRoot, "*.yml", SearchOption.AllDirectories).Length
                 : 0;
+
+            // Build summary and flush log
+            var summary = new LogFileSummary
+            {
+                Operation = "Serialize",
+                Timestamp = DateTime.UtcNow,
+                DryRun = false,
+                Predicates = result.SerializeResults.Select(r => new PredicateSummary
+                {
+                    Name = r.TableName,
+                    Table = r.TableName,
+                    Created = r.RowsSerialized
+                }).ToList(),
+                TotalCreated = result.SerializeResults.Sum(r => r.RowsSerialized),
+                Errors = result.Errors.ToList()
+            };
+            FlushLog(_logFile, summary);
 
             var message = $"Serialization complete. {fileCount} YAML files written to {config.SerializeRoot}. {result.Summary}";
             if (result.HasErrors)

@@ -15,8 +15,8 @@ public sealed class SerializerNavigationNodePathProvider : NavigationNodePathPro
         new([
             typeof(SettingsArea).FullName,
             NavigationContext.Empty,
-            typeof(AreasSection).FullName,
-            "Content_Settings",
-            SerializerSettingsNodeProvider.SyncNodeId
+            typeof(SystemSection).FullName,
+            "Settings_Database",
+            SerializerSettingsNodeProvider.SerializeNodeId
         ]);
 }
