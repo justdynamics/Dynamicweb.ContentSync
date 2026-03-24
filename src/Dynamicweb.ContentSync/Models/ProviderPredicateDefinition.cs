@@ -32,4 +32,10 @@ public record ProviderPredicateDefinition
 
     /// <summary>Paths or patterns to exclude.</summary>
     public List<string> Excludes { get; init; } = new();
+
+    /// <summary>
+    /// Fully-qualified DW service cache type names to clear after deserialization.
+    /// Sourced from DataGroup XML ServiceCaches sections.
+    /// </summary>
+    public List<string> ServiceCaches { get; init; } = new();
 }

@@ -86,7 +86,8 @@ public static class ConfigLoader
         Excludes = raw.Excludes ?? new List<string>(),
         Table = raw.Table,
         NameColumn = raw.NameColumn,
-        CompareColumns = raw.CompareColumns
+        CompareColumns = raw.CompareColumns,
+        ServiceCaches = raw.ServiceCaches ?? new List<string>()
     };
 
     // Raw (nullable) models for deserialization — no required constraints so we can produce clear validation errors
@@ -111,5 +112,6 @@ public static class ConfigLoader
         public string? Table { get; set; }
         public string? NameColumn { get; set; }
         public string? CompareColumns { get; set; }
+        public List<string>? ServiceCaches { get; set; }
     }
 }

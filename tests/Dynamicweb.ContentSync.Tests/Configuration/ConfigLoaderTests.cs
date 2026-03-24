@@ -482,6 +482,56 @@ public class ConfigLoaderTests : IDisposable
     }
 
     [Fact]
+    public void Load_SqlTablePredicate_WithServiceCaches_DeserializesServiceCaches()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                {
+                  "name": "Order Flows",
+                  "providerType": "SqlTable",
+                  "table": "EcomOrderFlow",
+                  "nameColumn": "OrderFlowName",
+                  "serviceCaches": ["Dynamicweb.Ecommerce.Orders.PaymentService", "Dynamicweb.Ecommerce.Orders.ShippingService"]
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Equal(2, config.Predicates[0].ServiceCaches.Count);
+        Assert.Equal("Dynamicweb.Ecommerce.Orders.PaymentService", config.Predicates[0].ServiceCaches[0]);
+        Assert.Equal("Dynamicweb.Ecommerce.Orders.ShippingService", config.Predicates[0].ServiceCaches[1]);
+    }
+
+    [Fact]
+    public void Load_SqlTablePredicate_WithoutServiceCaches_DefaultsToEmptyList()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                {
+                  "name": "Order Flows",
+                  "providerType": "SqlTable",
+                  "table": "EcomOrderFlow",
+                  "nameColumn": "OrderFlowName"
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.NotNull(config.Predicates[0].ServiceCaches);
+        Assert.Empty(config.Predicates[0].ServiceCaches);
+    }
+
+    [Fact]
     public void Load_SqlTablePredicate_MissingPath_DoesNotThrow()
     {
         var json = """
