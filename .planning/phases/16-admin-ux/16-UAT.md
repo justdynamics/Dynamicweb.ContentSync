@@ -1,5 +1,5 @@
 ---
-status: diagnosed
+status: resolved
 phase: 16-admin-ux
 source: [16-01-SUMMARY.md, 16-02-SUMMARY.md, 16-03-SUMMARY.md, 16-04-SUMMARY.md]
 started: 2026-03-24T14:30:00Z
@@ -64,7 +64,7 @@ blocked: 0
 ## Gaps
 
 - truth: "Log viewer dropdown selection updates displayed summary, advice, and raw log content"
-  status: failed
+  status: resolved
   reason: "User reported: the 2 logs are visible but selecting a file does not update the details"
   severity: major
   test: 6
@@ -77,7 +77,7 @@ blocked: 0
   debug_session: ""
 
 - truth: "Clicking Import to database on a zip shows dry-run confirmation with per-table breakdown"
-  status: failed
+  status: resolved
   reason: "User reported: The zip file has an action menu, but clicking import the dialog shows: Zip file not found: /Files/System/Serializer/Download/Serializer_Home Machines_2026-03-24.zip"
   severity: major
   test: 8
