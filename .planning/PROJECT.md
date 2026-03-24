@@ -67,6 +67,7 @@ Developers can reliably move DynamicWeb database state between environments thro
 - [x] Move deserialize to Asset management file detail page action — v2.0 Phase 16
 - [x] Remove scheduled tasks (API commands replace them) — v2.0 Phase 16
 - [x] Move admin UI from Settings > Content > Sync to Settings > Database > Serialize — v2.0 Phase 16
+- [x] Predicate config multi-provider support (Content + SqlTable fields) — v2.0 Phase 18
 
 ### Out of Scope
 
