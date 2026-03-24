@@ -89,7 +89,7 @@ Plans:
 - [x] 14-02-PLAN.md — SerializerOrchestrator + unified commands + scheduled task updates
 
 ### Phase 15: Ecommerce Tables at Scale
-**Goal**: All ecommerce settings tables (~15) serialize and deserialize reliably with correct FK ordering, cache invalidation, and no duplicate rows from shared DataItemTypes
+**Goal**: All ecommerce settings tables (~26) serialize and deserialize reliably with correct FK ordering, cache invalidation, and no duplicate rows from shared DataItemTypes
 **Depends on**: Phase 13 (SqlTableProvider), Phase 14 (orchestrator)
 **Requirements**: ECOM-01, ECOM-02, ECOM-03, ECOM-04, SQL-03, CACHE-01
 **Success Criteria** (what must be TRUE):
@@ -98,7 +98,10 @@ Plans:
   3. Countries, Currencies, and VAT settings round-trip through YAML correctly
   4. After deserialization, DW admin UI reflects the new ecommerce data without requiring an application restart (service caches invalidated)
   5. Tables are deserialized in FK dependency order determined by topological sort of sys.foreign_keys
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 15-01-PLAN.md — FkDependencyResolver + CacheInvalidator + ServiceCaches config field
+- [ ] 15-02-PLAN.md — Orchestrator FK/cache integration + ecommerce predicate config documentation
 
 ### Phase 16: Admin UX
 **Goal**: Users have a log viewer with guided advice, can deserialize from asset management, find the settings screen at its new location, and scheduled tasks are deprecated
@@ -141,6 +144,6 @@ Plans:
 | 12. Permission Deserialization + Docs | v1.3 | 2/2 | Complete | 2026-03-23 |
 | 13. Provider Foundation + SqlTableProvider Proof | v2.0 | 3/3 | Complete    | 2026-03-23 |
 | 14. Content Migration + Orchestrator | v2.0 | 2/2 | Complete    | 2026-03-24 |
-| 15. Ecommerce Tables at Scale | v2.0 | 0/0 | Not started | - |
+| 15. Ecommerce Tables at Scale | v2.0 | 0/2 | In progress | - |
 | 16. Admin UX | v2.0 | 0/0 | Not started | - |
 | 17. Project Rename | v2.0 | 0/0 | Not started | - |
