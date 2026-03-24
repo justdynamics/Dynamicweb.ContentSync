@@ -38,7 +38,7 @@ Requirements for the DynamicWeb.Serializer milestone. Each maps to roadmap phase
 ### Admin UX
 
 - [x] **UX-01**: Log viewer screen shows per-provider summaries with guided advice (e.g., "Create missing groups: X, Y")
-- [ ] **UX-02**: Deserialize action available on Asset management file detail page for zip files
+- [x] **UX-02**: Deserialize action available on Asset management file detail page for zip files
 - [x] **UX-03**: Admin tree node relocated from Settings > Content > Sync to Settings > Database > Serialize
 - [x] **UX-04**: Scheduled tasks deprecated (API commands are the replacement)
 
@@ -100,7 +100,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CACHE-02 | Phase 14 | Complete |
 | CACHE-03 | Phase 14 | Complete |
 | UX-01 | Phase 16 | Complete |
-| UX-02 | Phase 16 | Pending |
+| UX-02 | Phase 16 | Complete |
 | UX-03 | Phase 16 | Complete |
 | UX-04 | Phase 16 | Complete |
 | REN-01 | Phase 17 | Complete |
