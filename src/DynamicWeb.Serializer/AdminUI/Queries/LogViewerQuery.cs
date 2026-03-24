@@ -5,10 +5,10 @@ namespace DynamicWeb.Serializer.AdminUI.Queries;
 
 public sealed class LogViewerQuery : DataQueryModelBase<LogViewerModel>
 {
-    public string? SelectedFile { get; set; }
+    public string? SelectedFileName { get; set; }
 
     public override LogViewerModel? GetModel()
     {
-        return LogViewerModel.Load(SelectedFile);
+        return LogViewerModel.Load(SelectedFileName);
     }
 }

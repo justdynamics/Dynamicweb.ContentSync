@@ -15,6 +15,11 @@ public sealed class LogViewerScreen : EditScreenBase<LogViewerModel>
     {
         var model = Model;
 
+        // Reload file data based on the ShadowEdit-overlaid SelectedFileName
+        // (ShadowEdit sets SelectedFileName before BuildEditScreen runs,
+        // but the query loaded data for the default file)
+        model?.ReloadSelectedFile();
+
         if (model == null || !model.HasLogs)
         {
             AddComponents("Log Viewer",
