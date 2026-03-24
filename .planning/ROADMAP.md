@@ -54,7 +54,7 @@
 - [x] **Phase 14: Content Migration + Orchestrator** - ContentProvider adapter wraps existing serializers, orchestrator routes predicates by data type (completed 2026-03-24)
 - [x] **Phase 15: Ecommerce Tables at Scale** - All ~15 ecommerce settings tables with FK ordering, cache invalidation, and duplicate DataItemType handling (completed 2026-03-24)
 - [x] **Phase 16: Admin UX + Rename** - Project rename, log viewer, asset management deserialize action, menu relocation, scheduled task deprecation (completed 2026-03-24)
-- [ ] **Phase 17: Project Rename** - Absorbed into Phase 16 (REN-01 pulled forward as Wave 1)
+- [x] **Phase 17: Project Rename** - Absorbed into Phase 16 (REN-01 pulled forward as Wave 1) (completed 2026-03-24)
 
 ## Phase Details
 
@@ -147,5 +147,5 @@ Plans:
 | 13. Provider Foundation + SqlTableProvider Proof | v2.0 | 3/3 | Complete    | 2026-03-23 |
 | 14. Content Migration + Orchestrator | v2.0 | 2/2 | Complete    | 2026-03-24 |
 | 15. Ecommerce Tables at Scale | v2.0 | 2/2 | Complete    | 2026-03-24 |
-| 16. Admin UX + Rename | v2.0 | 4/4 | Complete   | 2026-03-24 |
+| 16. Admin UX + Rename | v2.0 | 4/4 | Complete    | 2026-03-24 |
 | 17. Project Rename | v2.0 | N/A | Absorbed into P16 | - |
