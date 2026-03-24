@@ -45,8 +45,9 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = config.EnsureDirectories(systemDir);
 
-            // Resolve physical zip path
-            var physicalZipPath = Path.Combine(filesRoot, FilePath.TrimStart('/', '\\'));
+            // Resolve physical zip path: use webRoot (parent of filesRoot) since DW virtual paths include /Files/ prefix
+            var webRoot = Directory.GetParent(filesRoot)?.FullName ?? filesRoot;
+            var physicalZipPath = Path.Combine(webRoot, FilePath.TrimStart('/', '\\'));
             if (!File.Exists(physicalZipPath))
                 return new() { Status = CommandResult.ResultType.Error, Message = $"Zip file not found: {FilePath}" };
 

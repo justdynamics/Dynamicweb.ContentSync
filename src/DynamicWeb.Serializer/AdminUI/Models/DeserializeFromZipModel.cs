@@ -47,7 +47,8 @@ public sealed class DeserializeFromZipModel : DataViewModelBase
 
             // Resolve the physical path from the DW Files path
             var filesRoot = Path.GetDirectoryName(configPath)!;
-            var physicalZipPath = Path.Combine(filesRoot, filePath.TrimStart('/', '\\'));
+            var webRoot = Directory.GetParent(filesRoot)?.FullName ?? filesRoot;
+            var physicalZipPath = Path.Combine(webRoot, filePath.TrimStart('/', '\\'));
 
             if (!File.Exists(physicalZipPath))
             {
