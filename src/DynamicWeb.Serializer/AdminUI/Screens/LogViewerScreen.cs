@@ -111,7 +111,7 @@ public sealed class LogViewerScreen : EditScreenBase<LogViewerModel>
         {
             SortOrder = OrderBy.Default,
             Options = options
-        };
+        }.WithReloadOnChange();
     }
 
     protected override string GetScreenName() => "Log Viewer";
