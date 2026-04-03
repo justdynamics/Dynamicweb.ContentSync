@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.3.1
-milestone_name: Internal Link Resolution
-status: verifying
-stopped_at: Completed 22-01-PLAN.md
-last_updated: "2026-04-03T15:10:03.989Z"
+milestone: v0.4.0
+milestone_name: Full Page Fidelity
+status: Defining requirements
+stopped_at: null
+last_updated: "2026-04-03T18:00:00.000Z"
 last_activity: 2026-04-03
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 5
-  completed_plans: 5
-  percent: 67
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -21,13 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 20 - Link Resolution Core
+**Current focus:** Defining requirements for v0.4.0 — full page fidelity
 
 ## Current Position
 
-Phase: 20 (2 of 4 in v0.3.1) — Link Resolution Core
-Plan: 2 of 2 in current phase (plan 01 complete, plan 02 pending)
-Status: Phase complete — ready for verification
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-03 — Milestone v0.4.0 started
 Last activity: 2026-04-03
 
 Progress: [███████░░░] 67% (v0.3.1)

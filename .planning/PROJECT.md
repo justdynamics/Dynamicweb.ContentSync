@@ -8,20 +8,16 @@ A DynamicWeb AppStore app that serializes and deserializes database content to/f
 
 Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
 
-## Current Milestone: v0.3.1 Internal Link Resolution
+## Current Milestone: v0.4.0 Full Page Fidelity
 
-**Goal:** Resolve internal page ID references in content fields during deserialization so cross-environment links work correctly.
+**Goal:** Serialize and deserialize ALL page-level settings, area ItemType connections, and ecommerce navigation configuration so that deserialized pages are functionally identical to the source.
 
 **Target features:**
-- Detect `Default.aspx?ID=NNN` patterns in ItemType field values during deserialization
-- Build source-PageID → target-PageID mapping using PageUniqueId (GUID) as bridge
-- Rewrite page ID references in ItemType fields to target IDs during content deserialization
-- Re-tag Git history from v1.0/v2.0 to 0.x pre-release versioning scheme
-- Settings & Schema serialization (~25 items)
-- Users, Marketing, PIM, Apps tables (~30 tables)
-- Log viewer with guided advice
-- Deserialize action moved to Asset management file detail page
-- Remove scheduled tasks (API commands replace them)
+- Expand SerializedPage DTO with all ~30 missing page properties (NavigationTag, ShortCut, UrlName, UrlDataProvider, SEO meta, SSL, permissions, visibility, URL inheritance, etc.)
+- Serialize and deserialize PageNavigationSettings (ecommerce navigation config)
+- Serialize and deserialize Area-level ItemType fields (header/footer/master connections)
+- Handle EcomProductGroupField custom column schema sync
+- Preserve original page timestamps during deserialization
 
 ## Requirements
 
@@ -68,8 +64,14 @@ Developers can reliably move DynamicWeb database state between environments thro
 - [x] Move admin UI from Settings > Content > Sync to Settings > Database > Serialize — v2.0 Phase 16
 - [x] Predicate config multi-provider support (Content + SqlTable fields) — v2.0 Phase 18
 
-- [ ] Resolve internal page ID references (`Default.aspx?ID=NNN`) in ItemType fields during deserialization — v0.3.1
-- [ ] Re-tag Git from v1.0/v2.0 to 0.x pre-release versioning — v0.3.1
+- [x] Resolve internal page ID references (`Default.aspx?ID=NNN`) in ItemType fields during deserialization — v0.3.1
+- [x] Re-tag Git from v1.0/v2.0 to 0.x pre-release versioning — v0.3.1
+
+- [ ] Serialize all ~30 missing page properties (NavigationTag, ShortCut, UrlName, SEO, SSL, etc.) — v0.4.0
+- [ ] Serialize PageNavigationSettings (ecommerce navigation config per page) — v0.4.0
+- [ ] Serialize Area-level ItemType fields (header/footer/master connections) — v0.4.0
+- [ ] Handle EcomProductGroupField custom column schema sync — v0.4.0
+- [ ] Preserve original page timestamps during deserialization — v0.4.0
 
 ### Out of Scope
 
@@ -166,4 +168,4 @@ This document evolves at phase transitions and milestone boundaries.
 - **v1.3 Permissions** — Permission serialization/deserialization with safety fallback (2026-03-23)
 
 ---
-*Last updated: 2026-04-03 — milestone v0.3.1 started (internal link resolution)*
+*Last updated: 2026-04-03 — milestone v0.4.0 started (full page fidelity)*
