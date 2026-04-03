@@ -152,6 +152,17 @@ public class ContentDeserializer
             DeserializePageSafe(page, ctx);
         }
 
+        // Phase 2: Resolve internal page links in all item field values
+        var sourceToTarget = InternalLinkResolver.BuildSourceToTargetMap(area.Pages, ctx.PageGuidCache);
+        if (sourceToTarget.Count > 0)
+        {
+            var resolver = new InternalLinkResolver(sourceToTarget, _log);
+            ResolveLinksInArea(predicate.AreaId, resolver);
+            var (resolved, unresolved) = resolver.GetStats();
+            if (resolved > 0 || unresolved > 0)
+                Log($"Link resolution: {resolved} resolved, {unresolved} unresolvable");
+        }
+
         return new DeserializeResult
         {
             Created = ctx.Created,
@@ -825,6 +836,127 @@ public class ContentDeserializer
 
         _loggedTemplateMissing.Add(key);
         Log($"WARNING: Grid row definition '{definitionId}.json' not found in any design folder under {designsDir}");
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 2: Internal link resolution
+    // -------------------------------------------------------------------------
+
+    private void ResolveLinksInArea(int areaId, InternalLinkResolver resolver)
+    {
+        // Re-read all pages in the area and scan their item fields for internal links
+        var allPages = Services.Pages.GetPagesByAreaID(areaId);
+        foreach (var page in allPages)
+        {
+            // Resolve item fields (link fields, button fields, rich text HTML)
+            ResolveLinksInItemFields(page.ItemType, page.ItemId, resolver);
+
+            // Resolve PropertyItem fields (Icon, SubmenuType, etc.)
+            ResolveLinksInPropertyItem(page, resolver);
+
+            // Resolve paragraph item fields
+            var paragraphs = Services.Paragraphs.GetParagraphsByPageId(page.ID);
+            foreach (var para in paragraphs)
+            {
+                ResolveLinksInItemFields(para.ItemType, para.ItemId, resolver);
+            }
+        }
+    }
+
+    private void ResolveLinksInItemFields(string? itemType, string? itemId, InternalLinkResolver resolver)
+    {
+        if (string.IsNullOrEmpty(itemType) || string.IsNullOrEmpty(itemId))
+            return;
+
+        var item = Services.Items.GetItem(itemType, itemId);
+        if (item == null)
+            return;
+
+        var fields = new Dictionary<string, object?>();
+        item.SerializeTo(fields);
+
+        bool anyChanged = false;
+        var updatedFields = new Dictionary<string, object?>();
+
+        foreach (var kvp in fields)
+        {
+            if (kvp.Value is string strValue && strValue.Length > 0)
+            {
+                var resolved = resolver.ResolveLinks(strValue);
+                if (resolved != strValue)
+                {
+                    updatedFields[kvp.Key] = resolved;
+                    anyChanged = true;
+                }
+                else
+                {
+                    updatedFields[kvp.Key] = kvp.Value;
+                }
+            }
+            else
+            {
+                updatedFields[kvp.Key] = kvp.Value;
+            }
+        }
+
+        if (anyChanged)
+        {
+            if (_isDryRun)
+            {
+                Log($"[DRY-RUN] Would resolve links in {itemType}/{itemId}");
+                return;
+            }
+            item.DeserializeFrom(updatedFields);
+            item.Save();
+        }
+    }
+
+    private void ResolveLinksInPropertyItem(Page page, InternalLinkResolver resolver)
+    {
+        if (string.IsNullOrEmpty(page.PropertyItemId))
+            return;
+
+        var propItem = page.PropertyItem;
+        if (propItem == null)
+            return;
+
+        var fields = new Dictionary<string, object?>();
+        propItem.SerializeTo(fields);
+
+        bool anyChanged = false;
+        var updatedFields = new Dictionary<string, object?>();
+
+        foreach (var kvp in fields)
+        {
+            if (kvp.Value is string strValue && strValue.Length > 0)
+            {
+                var resolved = resolver.ResolveLinks(strValue);
+                if (resolved != strValue)
+                {
+                    updatedFields[kvp.Key] = resolved;
+                    anyChanged = true;
+                }
+                else
+                {
+                    updatedFields[kvp.Key] = kvp.Value;
+                }
+            }
+            else
+            {
+                updatedFields[kvp.Key] = kvp.Value;
+            }
+        }
+
+        if (anyChanged)
+        {
+            if (_isDryRun)
+            {
+                Log($"[DRY-RUN] Would resolve links in PropertyItem of page {page.UniqueId}");
+                return;
+            }
+            propItem.DeserializeFrom(updatedFields);
+            propItem.Save();
+        }
     }
 
     // -------------------------------------------------------------------------
