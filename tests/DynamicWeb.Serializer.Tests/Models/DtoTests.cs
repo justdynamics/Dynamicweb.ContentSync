@@ -143,6 +143,54 @@ public class DtoTests
     }
 
     [Fact]
+    public void SerializedPage_BooleanDefaults_MatchDynamicWebDefaults()
+    {
+        var page = new SerializedPage
+        {
+            PageUniqueId = Guid.NewGuid(),
+            Name = "Test", MenuText = "Test",
+            UrlName = "test", SortOrder = 1
+        };
+
+        // DW defaults these to true
+        Assert.True(page.Allowclick);
+        Assert.True(page.Allowsearch);
+        Assert.True(page.ShowInSitemap);
+        Assert.True(page.ShowInLegend);
+
+        // DW defaults these to false
+        Assert.False(page.Hidden);
+    }
+
+    [Fact]
+    public void SerializedPage_ActiveFromActiveTo_DefaultToNull()
+    {
+        var page = new SerializedPage
+        {
+            PageUniqueId = Guid.NewGuid(),
+            Name = "Test", MenuText = "Test",
+            UrlName = "test", SortOrder = 1
+        };
+        Assert.Null(page.ActiveFrom);
+        Assert.Null(page.ActiveTo);
+    }
+
+    [Fact]
+    public void SerializedPage_SubObjects_DefaultToNull()
+    {
+        var page = new SerializedPage
+        {
+            PageUniqueId = Guid.NewGuid(),
+            Name = "Test", MenuText = "Test",
+            UrlName = "test", SortOrder = 1
+        };
+        Assert.Null(page.Seo);
+        Assert.Null(page.UrlSettings);
+        Assert.Null(page.Visibility);
+        Assert.Null(page.NavigationSettings);
+    }
+
+    [Fact]
     public void ContentHierarchy_FullDepth_CanBeConstructed()
     {
         var tree = ContentTreeBuilder.BuildSampleTree();

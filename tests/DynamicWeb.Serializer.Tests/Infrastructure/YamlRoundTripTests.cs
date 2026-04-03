@@ -156,6 +156,188 @@ public class YamlRoundTripTests
     }
 
     [Fact]
+    public void Yaml_RoundTrips_PageWithAllNewFlatProperties()
+    {
+        var activeFrom = new DateTime(2025, 1, 15, 10, 0, 0, DateTimeKind.Utc);
+        var activeTo = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc);
+
+        var page = ContentTreeBuilder.BuildSinglePage("Full Props") with
+        {
+            NavigationTag = "main-nav",
+            ShortCut = "Default.aspx?ID=42",
+            Hidden = true,
+            Allowclick = false,
+            Allowsearch = false,
+            ShowInSitemap = false,
+            ShowInLegend = false,
+            SslMode = 2,
+            ColorSchemeId = "dark-theme",
+            ExactUrl = "/custom-url",
+            ContentType = "text/html",
+            TopImage = "/images/banner.jpg",
+            DisplayMode = "List",
+            ActiveFrom = activeFrom,
+            ActiveTo = activeTo,
+            PermissionType = 3
+        };
+
+        var yaml = _serializer.Serialize(page);
+        var result = _deserializer.Deserialize<SerializedPage>(yaml);
+
+        Assert.Equal("main-nav", result.NavigationTag);
+        Assert.Equal("Default.aspx?ID=42", result.ShortCut);
+        Assert.True(result.Hidden);
+        Assert.False(result.Allowclick);
+        Assert.False(result.Allowsearch);
+        Assert.False(result.ShowInSitemap);
+        Assert.False(result.ShowInLegend);
+        Assert.Equal(2, result.SslMode);
+        Assert.Equal("dark-theme", result.ColorSchemeId);
+        Assert.Equal("/custom-url", result.ExactUrl);
+        Assert.Equal("text/html", result.ContentType);
+        Assert.Equal("/images/banner.jpg", result.TopImage);
+        Assert.Equal("List", result.DisplayMode);
+        Assert.Equal(activeFrom, result.ActiveFrom);
+        Assert.Equal(activeTo, result.ActiveTo);
+        Assert.Equal(3, result.PermissionType);
+    }
+
+    [Fact]
+    public void Yaml_RoundTrips_PageWithSeoSubObject()
+    {
+        var page = ContentTreeBuilder.BuildSinglePage("SEO Test") with
+        {
+            Seo = new SerializedSeoSettings
+            {
+                MetaTitle = "My Page Title",
+                MetaCanonical = "https://example.com/page",
+                Description = "A test page description",
+                Keywords = "test, page, seo",
+                Noindex = true,
+                Nofollow = true,
+                Robots404 = true
+            }
+        };
+
+        var yaml = _serializer.Serialize(page);
+        var result = _deserializer.Deserialize<SerializedPage>(yaml);
+
+        Assert.NotNull(result.Seo);
+        Assert.Equal("My Page Title", result.Seo.MetaTitle);
+        Assert.Equal("https://example.com/page", result.Seo.MetaCanonical);
+        Assert.Equal("A test page description", result.Seo.Description);
+        Assert.Equal("test, page, seo", result.Seo.Keywords);
+        Assert.True(result.Seo.Noindex);
+        Assert.True(result.Seo.Nofollow);
+        Assert.True(result.Seo.Robots404);
+    }
+
+    [Fact]
+    public void Yaml_RoundTrips_PageWithUrlSettings()
+    {
+        var page = ContentTreeBuilder.BuildSinglePage("URL Test") with
+        {
+            UrlSettings = new SerializedUrlSettings
+            {
+                UrlDataProviderTypeName = "CustomProvider",
+                UrlDataProviderParameters = "param1=val1&param2=val2",
+                UrlIgnoreForChildren = true,
+                UrlUseAsWritten = true
+            }
+        };
+
+        var yaml = _serializer.Serialize(page);
+        var result = _deserializer.Deserialize<SerializedPage>(yaml);
+
+        Assert.NotNull(result.UrlSettings);
+        Assert.Equal("CustomProvider", result.UrlSettings.UrlDataProviderTypeName);
+        Assert.Equal("param1=val1&param2=val2", result.UrlSettings.UrlDataProviderParameters);
+        Assert.True(result.UrlSettings.UrlIgnoreForChildren);
+        Assert.True(result.UrlSettings.UrlUseAsWritten);
+    }
+
+    [Fact]
+    public void Yaml_RoundTrips_PageWithVisibility()
+    {
+        var page = ContentTreeBuilder.BuildSinglePage("Visibility Test") with
+        {
+            Visibility = new SerializedVisibilitySettings
+            {
+                HideForPhones = true,
+                HideForTablets = true,
+                HideForDesktops = false
+            }
+        };
+
+        var yaml = _serializer.Serialize(page);
+        var result = _deserializer.Deserialize<SerializedPage>(yaml);
+
+        Assert.NotNull(result.Visibility);
+        Assert.True(result.Visibility.HideForPhones);
+        Assert.True(result.Visibility.HideForTablets);
+        Assert.False(result.Visibility.HideForDesktops);
+    }
+
+    [Fact]
+    public void Yaml_RoundTrips_PageWithNavigationSettings()
+    {
+        var page = ContentTreeBuilder.BuildSinglePage("Nav Test") with
+        {
+            NavigationSettings = new SerializedNavigationSettings
+            {
+                UseEcomGroups = true,
+                ParentType = "Groups",
+                Groups = "GROUP1",
+                ShopID = "SHOP1",
+                MaxLevels = 3,
+                ProductPage = "Default.aspx?Id=42",
+                NavigationProvider = "EcomNavProvider",
+                IncludeProducts = true
+            }
+        };
+
+        var yaml = _serializer.Serialize(page);
+        var result = _deserializer.Deserialize<SerializedPage>(yaml);
+
+        Assert.NotNull(result.NavigationSettings);
+        Assert.True(result.NavigationSettings.UseEcomGroups);
+        Assert.Equal("Groups", result.NavigationSettings.ParentType);
+        Assert.Equal("GROUP1", result.NavigationSettings.Groups);
+        Assert.Equal("SHOP1", result.NavigationSettings.ShopID);
+        Assert.Equal(3, result.NavigationSettings.MaxLevels);
+        Assert.Equal("Default.aspx?Id=42", result.NavigationSettings.ProductPage);
+        Assert.Equal("EcomNavProvider", result.NavigationSettings.NavigationProvider);
+        Assert.True(result.NavigationSettings.IncludeProducts);
+    }
+
+    [Fact]
+    public void Yaml_BackwardCompat_OldYamlWithoutNewProperties_DeserializesCorrectly()
+    {
+        // Simulate old YAML that only has the original required fields
+        var page = ContentTreeBuilder.BuildSinglePage("Old Page");
+
+        var yaml = _serializer.Serialize(page);
+        var result = _deserializer.Deserialize<SerializedPage>(yaml);
+
+        // Boolean defaults should match DW defaults
+        Assert.True(result.Allowclick);
+        Assert.True(result.Allowsearch);
+        Assert.True(result.ShowInSitemap);
+        Assert.True(result.ShowInLegend);
+        Assert.False(result.Hidden);
+
+        // Nullable DateTime should be null
+        Assert.Null(result.ActiveFrom);
+        Assert.Null(result.ActiveTo);
+
+        // Sub-objects should be null
+        Assert.Null(result.Seo);
+        Assert.Null(result.UrlSettings);
+        Assert.Null(result.Visibility);
+        Assert.Null(result.NavigationSettings);
+    }
+
+    [Fact]
     public void Yaml_Serialization_IsDeterministic()
     {
         var page = ContentTreeBuilder.BuildSinglePage("Test") with

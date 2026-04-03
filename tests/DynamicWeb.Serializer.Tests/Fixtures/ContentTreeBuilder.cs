@@ -233,6 +233,66 @@ public static class ContentTreeBuilder
     }
 
     /// <summary>
+    /// Builds a page with every new property populated for round-trip testing.
+    /// </summary>
+    public static SerializedPage BuildPageWithAllProperties(string name = "Full Properties Page", Guid? guid = null)
+    {
+        return BuildSinglePage(name, guid) with
+        {
+            NavigationTag = "main-nav",
+            ShortCut = "Default.aspx?ID=42",
+            Hidden = true,
+            Allowclick = false,
+            Allowsearch = false,
+            ShowInSitemap = false,
+            ShowInLegend = false,
+            SslMode = 2,
+            ColorSchemeId = "dark-theme",
+            ExactUrl = "/custom-url",
+            ContentType = "text/html",
+            TopImage = "/images/banner.jpg",
+            DisplayMode = "List",
+            ActiveFrom = new DateTime(2025, 1, 15, 10, 0, 0, DateTimeKind.Utc),
+            ActiveTo = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc),
+            PermissionType = 3,
+            Seo = new SerializedSeoSettings
+            {
+                MetaTitle = "Test Meta Title",
+                MetaCanonical = "https://example.com/page",
+                Description = "A test description",
+                Keywords = "test, keywords",
+                Noindex = true,
+                Nofollow = true,
+                Robots404 = false
+            },
+            UrlSettings = new SerializedUrlSettings
+            {
+                UrlDataProviderTypeName = "CustomProvider",
+                UrlDataProviderParameters = "param1=val1",
+                UrlIgnoreForChildren = true,
+                UrlUseAsWritten = true
+            },
+            Visibility = new SerializedVisibilitySettings
+            {
+                HideForPhones = true,
+                HideForTablets = false,
+                HideForDesktops = false
+            },
+            NavigationSettings = new SerializedNavigationSettings
+            {
+                UseEcomGroups = true,
+                ParentType = "Groups",
+                Groups = "GROUP1,GROUP2",
+                ShopID = "SHOP1",
+                MaxLevels = 3,
+                ProductPage = "Default.aspx?Id=42",
+                NavigationProvider = "EcomNavProvider",
+                IncludeProducts = true
+            }
+        };
+    }
+
+    /// <summary>
     /// Builds a 3-level nested hierarchy:
     /// Area "Test Website"
     ///   Page "Parent" (SortOrder=1)
