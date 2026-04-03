@@ -105,7 +105,9 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. After deserialization, `Default.aspx?ID=NNN#PPP` references have both the page ID and paragraph ID rewritten to target values
   2. Anchor links where the paragraph does not exist in target but the page does are resolved for the page ID portion and a warning is logged for the paragraph fragment
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 21-01-PLAN.md -- TDD paragraph anchor resolution in InternalLinkResolver + wire paragraph map into ContentDeserializer
 
 ### Phase 22: Version Housekeeping
 **Goal**: Git history uses consistent 0.x pre-release versioning instead of the legacy v1.0/v2.0 scheme
@@ -142,5 +144,5 @@ Plans:
 | 18. Predicate Config Multi-Provider | v2.0 | 2/2 | Complete | 2026-03-24 |
 | 19. Source ID Serialization | v0.3.1 | 1/1 | Complete | 2026-04-03 |
 | 20. Link Resolution Core | v0.3.1 | 2/2 | Complete   | 2026-04-03 |
-| 21. Paragraph Anchor Resolution | v0.3.1 | 0/0 | Not started | - |
+| 21. Paragraph Anchor Resolution | v0.3.1 | 0/1 | Not started | - |
 | 22. Version Housekeeping | v0.3.1 | 0/0 | Not started | - |
