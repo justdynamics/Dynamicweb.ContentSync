@@ -116,7 +116,9 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Git tags follow a 0.x.y pattern (e.g., 0.1.0, 0.2.0, 0.3.0) replacing the previous v1.0/v2.0 tags
   2. Running `git tag` shows only 0.x tags (no leftover v1.x or v2.x tags)
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 22-01-PLAN.md -- Re-tag git history to 0.x versioning and update .csproj version
 
 ## Progress
 
@@ -145,4 +147,4 @@ Plans:
 | 19. Source ID Serialization | v0.3.1 | 1/1 | Complete | 2026-04-03 |
 | 20. Link Resolution Core | v0.3.1 | 2/2 | Complete   | 2026-04-03 |
 | 21. Paragraph Anchor Resolution | v0.3.1 | 1/1 | Complete   | 2026-04-03 |
-| 22. Version Housekeeping | v0.3.1 | 0/0 | Not started | - |
+| 22. Version Housekeeping | v0.3.1 | 0/1 | Not started | - |
