@@ -3,6 +3,7 @@ namespace DynamicWeb.Serializer.Models;
 public record SerializedPage
 {
     public required Guid PageUniqueId { get; init; }
+    public int? SourcePageId { get; init; }
     public required string Name { get; init; }
     public required string MenuText { get; init; }
     public required string UrlName { get; init; }

@@ -41,6 +41,7 @@ public class ContentMapper
         return new SerializedPage
         {
             PageUniqueId = page.UniqueId,
+            SourcePageId = page.ID,
             // DW10 Page does not have a distinct Name property; MenuText is the navigation/display label.
             Name = page.MenuText ?? string.Empty,
             MenuText = page.MenuText ?? string.Empty,
@@ -136,6 +137,7 @@ public class ContentMapper
         return new SerializedParagraph
         {
             ParagraphUniqueId = paragraph.UniqueId,
+            SourceParagraphId = paragraph.ID,
             SortOrder = paragraph.Sort,
             ItemType = paragraph.ItemType,
             Header = paragraph.Header,

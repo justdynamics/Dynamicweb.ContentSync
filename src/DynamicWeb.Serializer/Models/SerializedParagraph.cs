@@ -3,6 +3,7 @@ namespace DynamicWeb.Serializer.Models;
 public record SerializedParagraph
 {
     public required Guid ParagraphUniqueId { get; init; }
+    public int? SourceParagraphId { get; init; }
     public required int SortOrder { get; init; }
     public string? ItemType { get; init; }
     public string? Header { get; init; }
