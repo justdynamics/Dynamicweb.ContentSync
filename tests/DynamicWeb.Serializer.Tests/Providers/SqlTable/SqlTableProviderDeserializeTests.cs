@@ -14,9 +14,9 @@ public class SqlTableProviderDeserializeTests
     {
         TableName = "EcomOrderFlow",
         NameColumn = "OrderFlowName",
-        KeyColumns = new[] { "OrderFlowId" },
-        IdentityColumns = new[] { "OrderFlowId" },
-        AllColumns = new[] { "OrderFlowId", "OrderFlowName", "OrderFlowDescription" }
+        KeyColumns = new List<string> { "OrderFlowId" },
+        IdentityColumns = new List<string> { "OrderFlowId" },
+        AllColumns = new List<string> { "OrderFlowId", "OrderFlowName", "OrderFlowDescription" }
     };
 
     private static readonly ProviderPredicateDefinition TestPredicate = new()
@@ -65,7 +65,7 @@ public class SqlTableProviderDeserializeTests
             yamlRows: new[] { yamlRow },
             existingDbRows: Array.Empty<Dictionary<string, object?>>());
 
-        writer.Setup(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), false))
+        writer.Setup(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), false, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Created);
 
         var result = provider.Deserialize(TestPredicate, inputRoot);
@@ -96,7 +96,7 @@ public class SqlTableProviderDeserializeTests
             yamlRows: new[] { yamlRow },
             existingDbRows: new[] { existingRow });
 
-        writer.Setup(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), false))
+        writer.Setup(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), false, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Updated);
 
         var result = provider.Deserialize(TestPredicate, inputRoot);
@@ -120,14 +120,14 @@ public class SqlTableProviderDeserializeTests
             yamlRows: new[] { yamlRow },
             existingDbRows: Array.Empty<Dictionary<string, object?>>());
 
-        writer.Setup(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), true))
+        writer.Setup(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), true, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Created);
 
         var result = provider.Deserialize(TestPredicate, inputRoot, isDryRun: true);
 
         Assert.Equal(1, result.Created);
         // Verify WriteRow was called with isDryRun=true
-        writer.Verify(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), true), Times.Once);
+        writer.Verify(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), true, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()), Times.Once);
         // ExecuteNonQuery should never have been called (dry run)
         executor.Verify(x => x.ExecuteNonQuery(It.IsAny<CommandBuilder>()), Times.Never);
     }
@@ -180,11 +180,11 @@ public class SqlTableProviderDeserializeTests
         // New row => Created, Changed row => Updated
         writer.Setup(w => w.WriteRow(
                 It.Is<Dictionary<string, object?>>(r => r["OrderFlowName"]!.ToString() == "NewFlow"),
-                It.IsAny<TableMetadata>(), false))
+                It.IsAny<TableMetadata>(), false, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Created);
         writer.Setup(w => w.WriteRow(
                 It.Is<Dictionary<string, object?>>(r => r["OrderFlowName"]!.ToString() == "Checkout"),
-                It.IsAny<TableMetadata>(), false))
+                It.IsAny<TableMetadata>(), false, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Updated);
 
         var result = provider.Deserialize(TestPredicate, inputRoot);
@@ -210,7 +210,7 @@ public class SqlTableProviderDeserializeTests
 
         // DataGroupMetadataReader mock
         var mockMetadataReader = new Mock<DataGroupMetadataReader>(mockExecutor.Object) { CallBase = false };
-        mockMetadataReader.Setup(x => x.GetTableMetadata(It.IsAny<ProviderPredicateDefinition>()))
+        mockMetadataReader.Setup(x => x.GetTableMetadata(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<bool>()))
             .Returns(TestMetadata);
 
         // Set up ReadAllRows to return existing DB rows via mock reader

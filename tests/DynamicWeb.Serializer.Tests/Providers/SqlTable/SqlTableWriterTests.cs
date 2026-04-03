@@ -14,18 +14,18 @@ public class SqlTableWriterTests
     {
         TableName = "EcomOrderFlow",
         NameColumn = "OrderFlowName",
-        KeyColumns = new[] { "OrderFlowId" },
-        IdentityColumns = new[] { "OrderFlowId" },
-        AllColumns = new[] { "OrderFlowId", "OrderFlowName", "OrderFlowDescription" }
+        KeyColumns = new List<string> { "OrderFlowId" },
+        IdentityColumns = new List<string> { "OrderFlowId" },
+        AllColumns = new List<string> { "OrderFlowId", "OrderFlowName", "OrderFlowDescription" }
     };
 
     private static TableMetadata CreateNonIdentityPkMetadata() => new()
     {
         TableName = "EcomCountry",
         NameColumn = "Name",
-        KeyColumns = new[] { "Name" },
-        IdentityColumns = new[] { "AutoId" },
-        AllColumns = new[] { "AutoId", "Name", "Code" }
+        KeyColumns = new List<string> { "Name" },
+        IdentityColumns = new List<string> { "AutoId" },
+        AllColumns = new List<string> { "AutoId", "Name", "Code" }
     };
 
     private static Dictionary<string, object?> CreateSampleRow() => new(StringComparer.OrdinalIgnoreCase)

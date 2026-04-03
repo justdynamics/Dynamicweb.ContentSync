@@ -70,9 +70,9 @@ public class IdentityResolutionTests
             TableName = "Test",
             NameColumn = "Name",
             CompareColumns = "",
-            KeyColumns = new[] { "Id" },
-            IdentityColumns = new[] { "Id" },
-            AllColumns = new[] { "Id", "Name", "Value" }
+            KeyColumns = new List<string> { "Id" },
+            IdentityColumns = new List<string> { "Id" },
+            AllColumns = new List<string> { "Id", "Name", "Value" }
         };
 
         var row = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
@@ -107,9 +107,9 @@ public class IdentityResolutionTests
             TableName = "Test",
             NameColumn = "Name",
             CompareColumns = "Name,Value",
-            KeyColumns = new[] { "Id" },
-            IdentityColumns = new[] { "Id" },
-            AllColumns = new[] { "Id", "Name", "Value", "Extra" }
+            KeyColumns = new List<string> { "Id" },
+            IdentityColumns = new List<string> { "Id" },
+            AllColumns = new List<string> { "Id", "Name", "Value", "Extra" }
         };
 
         var row1 = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
@@ -139,8 +139,8 @@ public class IdentityResolutionTests
         TableName = "TestTable",
         NameColumn = nameColumn,
         CompareColumns = "",
-        KeyColumns = keyColumns,
-        IdentityColumns = Array.Empty<string>(),
-        AllColumns = Array.Empty<string>()
+        KeyColumns = keyColumns.ToList(),
+        IdentityColumns = new List<string>(),
+        AllColumns = new List<string>()
     };
 }

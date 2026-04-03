@@ -98,9 +98,9 @@ public class FlatFileStoreTests : IDisposable
             TableName = "EcomOrderFlow",
             NameColumn = "OrderFlowName",
             CompareColumns = "",
-            KeyColumns = new[] { "OrderFlowId" },
-            IdentityColumns = new[] { "OrderFlowId" },
-            AllColumns = new[] { "OrderFlowId", "OrderFlowName", "OrderFlowDescription" }
+            KeyColumns = new List<string> { "OrderFlowId" },
+            IdentityColumns = new List<string> { "OrderFlowId" },
+            AllColumns = new List<string> { "OrderFlowId", "OrderFlowName", "OrderFlowDescription" }
         };
 
         _store.WriteMeta(_tempDir, "EcomOrderFlow", metadata);
@@ -125,9 +125,9 @@ public class FlatFileStoreTests : IDisposable
             TableName = "TestTable",
             NameColumn = "Name",
             CompareColumns = "",
-            KeyColumns = new[] { "Id" },
-            IdentityColumns = Array.Empty<string>(),
-            AllColumns = new[] { "Id", "Name" }
+            KeyColumns = new List<string> { "Id" },
+            IdentityColumns = new List<string>(),
+            AllColumns = new List<string> { "Id", "Name" }
         };
         _store.WriteMeta(_tempDir, "TestTable", metadata);
 
