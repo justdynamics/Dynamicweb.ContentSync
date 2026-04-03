@@ -20,7 +20,7 @@
 
 ## Schema Sync
 
-- [ ] **SCHEMA-01**: EcomProductGroupField custom columns are created on EcomGroups table during deserialization before product group data is imported
+- [x] **SCHEMA-01**: EcomProductGroupField custom columns are created on EcomGroups table during deserialization before product group data is imported
 
 ## Future Requirements (deferred)
 
@@ -44,4 +44,4 @@
 | ECOM-02 | Phase 23 | — | Pending |
 | AREA-01 | Phase 24 | — | Pending |
 | AREA-02 | Phase 24 | — | Pending |
-| SCHEMA-01 | Phase 25 | — | Pending |
+| SCHEMA-01 | Phase 25 | 25-01 | Complete |
