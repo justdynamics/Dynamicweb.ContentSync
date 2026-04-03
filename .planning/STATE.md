@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v0.3.1
 milestone_name: Internal Link Resolution
-status: Defining requirements
-stopped_at: null
-last_updated: "2026-04-03T09:00:00.000Z"
+status: Ready to plan
+stopped_at: Roadmap created, ready to plan Phase 19
+last_updated: "2026-04-02T12:00:00.000Z"
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -19,20 +19,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Defining requirements for v0.3.1 — internal link resolution
+**Current focus:** Phase 19 - Source ID Serialization
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-04-03 — Milestone v0.3.1 started
+Phase: 19 (1 of 4 in v0.3.1) — Source ID Serialization
+Plan: 0 of 0 in current phase
+Status: Ready to plan
+Last activity: 2026-04-02 — Roadmap created for v0.3.1 Internal Link Resolution
+
+Progress: [░░░░░░░░░░] 0% (v0.3.1)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 20
+- Total plans completed: 20 (prior milestones)
 - Average duration: 4min
 - Total execution time: ~1.4 hours
 
@@ -40,32 +42,13 @@ Last activity: 2026-04-03 — Milestone v0.3.1 started
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 2 | 10min | 5min |
-| 02-configuration | 1 | 2min | 2min |
-| 03-serialization | 3 | 13min | 4min |
-| 04-deserialization | 2 | 5min | 3min |
-| 05-integration | 2 | 13min | 7min |
-| 06-robustness | 2 | 7min | 4min |
-| 07-config-infra | 2 | 7min | 4min |
-| 08-settings-screen | 1 | 10min | 10min |
-| 09-predicate-mgmt | 2 | 6min | 3min |
-| 10-context-menu | 2 | 4min | 2min |
-| 11-permission-serialization | 1 | 7min | 7min |
-| 12-permission-deser | 2 | 4min | 2min |
-| Phase 13 P01 | 2min | 2 tasks | 13 files |
-| Phase 13 P02 | 4min | 2 tasks | 10 files |
-| Phase 13 P03 | 5min | 2 tasks | 5 files |
-| Phase 14 P01 | 9min | 2 tasks | 15 files |
-| Phase 14 P02 | 4min | 2 tasks | 9 files |
-| Phase 15 P01 | 6min | 2 tasks | 7 files |
-| Phase 15 P02 | 9min | 2 tasks | 6 files |
-| Phase 16-01 P01 | 9min | 1 tasks | 96 files |
-| Phase 16-02 P02 | 5min | 2 tasks | 10 files |
-| Phase 16-03 P03 | 4min | 2 tasks | 5 files |
-| Phase 16 P04 | 6min | 2 tasks | 7 files |
-| Phase 16-admin-ux P05 | 1min | 2 tasks | 3 files |
-| Phase 18 P01 | 3min | 2 tasks | 4 files |
-| Phase 18 P02 | 2min | 2 tasks | 4 files |
+| (prior milestones) | 20 | ~80min | ~4min |
+
+**Recent Trend:**
+- Last 5 plans: 1min, 2min, 3min, 6min, 4min
+- Trend: Stable
+
+*Updated after each plan completion*
 
 ## Accumulated Context
 
@@ -74,37 +57,11 @@ Last activity: 2026-04-03 — Milestone v0.3.1 started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [v2.0]: ContentSerializer/ContentDeserializer internals remain unchanged — ContentProvider is a thin adapter
-- [v2.0]: SqlTableProvider driven by DataGroup XML metadata (Table, NameColumn, CompareColumns)
-- [v2.0]: FK ordering via topological sort from sys.foreign_keys
-- [v2.0]: Rename isolated as final phase to avoid concurrent breakage with feature work
-- [Phase 13]: ProviderDeserializeResult separate from content DeserializeResult to avoid coupling
-- [Phase 13]: Dictionary keys preserved as-is in YAML (not camelCased) for SQL table serialization
-- [Phase 13]: Two-step existence check before MERGE for Created/Updated (simpler than OUTPUT $action)
-- [Phase 13]: Made GetTableMetadata and WriteRow virtual for Moq testability
-- [Phase 14]: Clean break: SyncConfiguration.Predicates changed from PredicateDefinition to ProviderPredicateDefinition
-- [Phase 14]: ContentProvider directly implements ISerializationProvider, delegates to ContentSerializer/ContentDeserializer
-- [Phase 14]: ProviderRegistry.CreateDefault() factory centralizes provider construction across all entry points
-- [Phase 14]: SqlTable commands deleted, unified ContentSync commands dispatch all providers via orchestrator
-- [Phase 15]: ICacheResolver/ICacheInstance interfaces abstract DW AddInManager for testability
-- [Phase 15]: Self-referencing FK filtering in C# as defense-in-depth alongside SQL WHERE
-- [Phase 15]: FkDependencyResolver and CacheInvalidator optional nullable constructor params for backward compatibility
-- [Phase 15]: DwCacheResolver uses reflection for AddInManager calls, avoiding compile-time DW version coupling
-- [Phase 15]: Non-SqlTable predicates first, then FK-ordered SqlTable predicates in deserialization
-- [Phase 16-01]: Full project rename from Dynamicweb.ContentSync to DynamicWeb.Serializer with backward-compat config file detection
-- [Phase 16-02]: Per-run log files with buffered lines and JSON summary header prepended on flush
-- [Phase 16-03]: Flattened LogFileSummary fields into model properties for EditorFor binding
-- [Phase 16-03]: Read-only EditScreenBase via null GetSaveCommand for display-only screens
-- [Phase 16]: PromptScreenBase for confirmation dialog with dry-run-on-load and confirm-to-execute pattern
-- [Phase 16]: IsPathUnderDirectory/IsZipExtension extracted as public static for direct unit testing
-- [Phase 16-admin-ux]: webRoot = Directory.GetParent(filesRoot) for DW virtual path resolution (avoids doubled /Files/ segment)
-- [Phase 18]: Provider-branched validation: Content requires AreaId/PageId, SqlTable requires Table, unknown types rejected
-- [Phase 18]: D-02 enforcement: on update, ProviderType read from existing config predicate, not from model
-- [Phase 18]: ProviderType Select with WithReloadOnChange only for new predicates; Type+Target list columns per D-08
-
-### Roadmap Evolution
-
-- Phase 18 added: Predicate Config Multi-Provider Support — Admin UI predicate edit/list screens support both Content and SqlTable provider types
+- DW LinkHelper API for link detection (no custom regex needed)
+- SourcePageId must be serialized in YAML before deserialization can build mapping
+- Boundary-aware ID replacement required to avoid substring collisions (ID=1 vs ID=12)
+- Forward reference problem: all pages must be deserialized before link resolution runs
+- ButtonEditor serialized value format needs runtime inspection
 
 ### Pending Todos
 
@@ -112,12 +69,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 10]: ScreenInjector target type for content tree page list is unknown — needs assembly inspection
-- [Phase 13]: FK constraint enforcement level (SQL Server vs application-layer) needs runtime validation
-- [Phase 16]: DW asset management extension point for file detail screen injector needs verification
+- ButtonEditor serialized value format not fully documented -- need runtime inspection
+- Paragraph GUID resolution during deserialization needs validation
+- LinkHelper.GetInternalPageIdsFromText behavior with malformed URLs needs testing
 
 ## Session Continuity
 
-Last session: 2026-03-24T19:22:01.933Z
-Stopped at: Completed 18-02-PLAN.md
+Last session: 2026-04-02
+Stopped at: Roadmap created, ready to plan Phase 19
 Resume file: None

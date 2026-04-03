@@ -35,11 +35,11 @@
 
 | REQ-ID | Phase | Plan | Status |
 |--------|-------|------|--------|
-| LINK-01 | — | — | Pending |
-| LINK-02 | — | — | Pending |
-| LINK-03 | — | — | Pending |
-| LINK-04 | — | — | Pending |
-| LINK-05 | — | — | Pending |
-| SER-01 | — | — | Pending |
-| SER-02 | — | — | Pending |
-| VER-01 | — | — | Pending |
+| LINK-01 | Phase 20 | — | Pending |
+| LINK-02 | Phase 20 | — | Pending |
+| LINK-03 | Phase 20 | — | Pending |
+| LINK-04 | Phase 20 | — | Pending |
+| LINK-05 | Phase 21 | — | Pending |
+| SER-01 | Phase 19 | — | Pending |
+| SER-02 | Phase 19 | — | Pending |
+| VER-01 | Phase 22 | — | Pending |
