@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.3.1
 milestone_name: Internal Link Resolution
-status: executing
-stopped_at: Completed 20-02-PLAN.md
-last_updated: "2026-04-03T12:57:50.111Z"
+status: verifying
+stopped_at: Completed 21-01-PLAN.md
+last_updated: "2026-04-03T13:46:56.966Z"
 last_activity: 2026-04-03
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  completed_phases: 3
+  total_plans: 4
+  completed_plans: 4
   percent: 67
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 
 Phase: 20 (2 of 4 in v0.3.1) — Link Resolution Core
 Plan: 2 of 2 in current phase (plan 01 complete, plan 02 pending)
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-03
 
 Progress: [███████░░░] 67% (v0.3.1)
@@ -55,6 +55,7 @@ Progress: [███████░░░] 67% (v0.3.1)
 *Updated after each plan completion*
 | Phase 20 P01 | 5min | 1 tasks | 2 files |
 | Phase 20 P02 | 2min | 1 tasks | 1 files |
+| Phase 21 P01 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Recent decisions affecting current work:
 - ButtonEditor serialized value format needs runtime inspection
 - [Phase 20]: Regex greedy \d+ provides boundary safety for ID replacement
 - [Phase 20]: PropertyItem link resolution uses separate method (page.PropertyItemType not available on DW Page API)
+- [Phase 21]: Extended regex with optional fragment group rather than separate pass for paragraph anchors
+- [Phase 21]: 4-tuple GetStats return for combined page + paragraph resolution counts
 
 ### Pending Todos
 
@@ -84,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T12:57:50.108Z
-Stopped at: Completed 20-02-PLAN.md
+Last session: 2026-04-03T13:46:56.962Z
+Stopped at: Completed 21-01-PLAN.md
 Resume file: None

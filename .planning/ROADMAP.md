@@ -65,7 +65,7 @@
 
 - [ ] **Phase 19: Source ID Serialization** - Serialize source numeric IDs into YAML so deserialization can build the ID mapping
 - [x] **Phase 20: Link Resolution Core** - Detect and rewrite `Default.aspx?ID=NNN` patterns in ItemType fields during deserialization (completed 2026-04-03)
-- [ ] **Phase 21: Paragraph Anchor Resolution** - Resolve paragraph ID fragments in `Default.aspx?ID=NNN#PPP` anchor links
+- [x] **Phase 21: Paragraph Anchor Resolution** - Resolve paragraph ID fragments in `Default.aspx?ID=NNN#PPP` anchor links (completed 2026-04-03)
 - [ ] **Phase 22: Version Housekeeping** - Re-tag Git history from v1.0/v2.0 to 0.x pre-release versioning
 
 ## Phase Details
@@ -107,7 +107,7 @@ Plans:
   2. Anchor links where the paragraph does not exist in target but the page does are resolved for the page ID portion and a warning is logged for the paragraph fragment
 **Plans**: 1 plan
 Plans:
-- [ ] 21-01-PLAN.md -- TDD paragraph anchor resolution in InternalLinkResolver + wire paragraph map into ContentDeserializer
+- [x] 21-01-PLAN.md -- TDD paragraph anchor resolution in InternalLinkResolver + wire paragraph map into ContentDeserializer
 
 ### Phase 22: Version Housekeeping
 **Goal**: Git history uses consistent 0.x pre-release versioning instead of the legacy v1.0/v2.0 scheme
@@ -144,5 +144,5 @@ Plans:
 | 18. Predicate Config Multi-Provider | v2.0 | 2/2 | Complete | 2026-03-24 |
 | 19. Source ID Serialization | v0.3.1 | 1/1 | Complete | 2026-04-03 |
 | 20. Link Resolution Core | v0.3.1 | 2/2 | Complete   | 2026-04-03 |
-| 21. Paragraph Anchor Resolution | v0.3.1 | 0/1 | Not started | - |
+| 21. Paragraph Anchor Resolution | v0.3.1 | 1/1 | Complete   | 2026-04-03 |
 | 22. Version Housekeeping | v0.3.1 | 0/0 | Not started | - |
