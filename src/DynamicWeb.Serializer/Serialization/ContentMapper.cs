@@ -53,6 +53,46 @@ public class ContentMapper
             LayoutApplyToSubPages = page.LayoutApplyToSubPages,
             IsFolder = page.IsFolder,
             TreeSection = page.TreeSection,
+            NavigationTag = page.NavigationTag,
+            ShortCut = page.ShortCut,
+            Hidden = page.Hidden,
+            Allowclick = page.Allowclick,
+            Allowsearch = page.Allowsearch,
+            ShowInSitemap = page.ShowInSitemap,
+            ShowInLegend = page.ShowInLegend,
+            SslMode = page.SslMode,
+            ColorSchemeId = page.ColorSchemeId,
+            ExactUrl = page.ExactUrl,
+            ContentType = page.ContentType,
+            TopImage = page.TopImage,
+            DisplayMode = page.DisplayMode.ToString(),
+            ActiveFrom = page.ActiveFrom,
+            ActiveTo = page.ActiveTo,
+            PermissionType = page.PermissionType,
+            Seo = new SerializedSeoSettings
+            {
+                MetaTitle = page.MetaTitle,
+                MetaCanonical = page.MetaCanonical,
+                Description = page.Description,
+                Keywords = page.Keywords,
+                Noindex = page.Noindex,
+                Nofollow = page.Nofollow,
+                Robots404 = page.Robots404
+            },
+            UrlSettings = new SerializedUrlSettings
+            {
+                UrlDataProviderTypeName = page.UrlDataProviderTypeName,
+                UrlDataProviderParameters = page.UrlDataProviderParameters,
+                UrlIgnoreForChildren = page.UrlIgnoreForChildren,
+                UrlUseAsWritten = page.UrlUseAsWritten
+            },
+            Visibility = new SerializedVisibilitySettings
+            {
+                HideForPhones = page.HideForPhones,
+                HideForTablets = page.HideForTablets,
+                HideForDesktops = page.HideForDesktops
+            },
+            NavigationSettings = MapNavigationSettings(page.NavigationSettings),
             Fields = fields,
             PropertyFields = propertyFields,
             Permissions = permissions,
@@ -179,6 +219,29 @@ public class ContentMapper
             .ToList();
 
         return columns;
+    }
+
+    /// <summary>
+    /// Maps DW PageNavigationSettings to DTO. Returns null when UseEcomGroups is false
+    /// (DW only populates NavigationSettings when ecommerce navigation is enabled).
+    /// </summary>
+    private static SerializedNavigationSettings? MapNavigationSettings(
+        Dynamicweb.Content.PageNavigationSettings? navSettings)
+    {
+        if (navSettings == null || !navSettings.UseEcomGroups)
+            return null;
+
+        return new SerializedNavigationSettings
+        {
+            UseEcomGroups = true,
+            ParentType = navSettings.ParentType.ToString(),
+            Groups = navSettings.Groups,
+            ShopID = navSettings.ShopID,
+            MaxLevels = navSettings.MaxLevels,
+            ProductPage = navSettings.ProductPage,
+            NavigationProvider = navSettings.NavigationProvider,
+            IncludeProducts = navSettings.IncludeProducts
+        };
     }
 
     // -------------------------------------------------------------------------
