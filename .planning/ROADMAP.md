@@ -95,7 +95,7 @@ Plans:
   5. ID replacement is boundary-aware: rewriting ID=1 does not corrupt ID=12 or ID=100
 **Plans**: 2 plans
 Plans:
-- [ ] 20-01-PLAN.md -- TDD InternalLinkResolver: boundary-aware regex resolver + BuildSourceToTargetMap + unit tests
+- [x] 20-01-PLAN.md -- TDD InternalLinkResolver: boundary-aware regex resolver + BuildSourceToTargetMap + unit tests
 - [ ] 20-02-PLAN.md -- Wire Phase 2 link resolution into ContentDeserializer.DeserializePredicate
 
 ### Phase 21: Paragraph Anchor Resolution
@@ -141,6 +141,6 @@ Plans:
 | 17. Project Rename | v2.0 | N/A | Absorbed into P16 | - |
 | 18. Predicate Config Multi-Provider | v2.0 | 2/2 | Complete | 2026-03-24 |
 | 19. Source ID Serialization | v0.3.1 | 1/1 | Complete | 2026-04-03 |
-| 20. Link Resolution Core | v0.3.1 | 0/2 | Planned | - |
+| 20. Link Resolution Core | v0.3.1 | 1/2 | In Progress|  |
 | 21. Paragraph Anchor Resolution | v0.3.1 | 0/0 | Not started | - |
 | 22. Version Housekeeping | v0.3.1 | 0/0 | Not started | - |
