@@ -152,15 +152,30 @@ public class ContentDeserializer
             DeserializePageSafe(page, ctx);
         }
 
-        // Phase 2: Resolve internal page links in all item field values
+        // Phase 2: Resolve internal page links and paragraph anchors in all item field values
         var sourceToTarget = InternalLinkResolver.BuildSourceToTargetMap(area.Pages, ctx.PageGuidCache);
-        if (sourceToTarget.Count > 0)
+
+        // Build paragraph GUID cache from target area pages
+        var allTargetPages = Services.Pages.GetPagesByAreaID(predicate.AreaId);
+        var paragraphGuidCache = new Dictionary<Guid, int>();
+        foreach (var page in allTargetPages)
         {
-            var resolver = new InternalLinkResolver(sourceToTarget, _log);
+            foreach (var para in Services.Paragraphs.GetParagraphsByPageId(page.ID))
+            {
+                if (para.UniqueId != Guid.Empty)
+                    paragraphGuidCache[para.UniqueId] = para.ID;
+            }
+        }
+
+        var paragraphMap = InternalLinkResolver.BuildSourceToTargetParagraphMap(area.Pages, paragraphGuidCache);
+
+        if (sourceToTarget.Count > 0 || paragraphMap.Count > 0)
+        {
+            var resolver = new InternalLinkResolver(sourceToTarget, _log, sourceToTargetParagraphIds: paragraphMap);
             ResolveLinksInArea(predicate.AreaId, resolver);
             var (resolved, unresolved, paraResolved, paraUnresolved) = resolver.GetStats();
-            if (resolved > 0 || unresolved > 0)
-                Log($"Link resolution: {resolved} resolved, {unresolved} unresolvable");
+            if (resolved > 0 || unresolved > 0 || paraResolved > 0 || paraUnresolved > 0)
+                Log($"Link resolution: {resolved} page links resolved, {unresolved} unresolvable; {paraResolved} paragraph anchors resolved, {paraUnresolved} unresolvable");
         }
 
         return new DeserializeResult
