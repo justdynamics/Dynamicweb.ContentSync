@@ -52,14 +52,24 @@ public class SqlTableReader
                 : "";
         }
 
-        // Composite PK: sort key columns alphabetically, join values with $$
-        var sortedKeys = metadata.KeyColumns
-            .OrderBy(k => k, StringComparer.OrdinalIgnoreCase);
+        if (metadata.KeyColumns.Count > 0)
+        {
+            // Composite PK: sort key columns alphabetically, join values with $$
+            var sortedKeys = metadata.KeyColumns
+                .OrderBy(k => k, StringComparer.OrdinalIgnoreCase);
 
-        var parts = sortedKeys.Select(key =>
-            row.TryGetValue(key, out var val) ? val?.ToString()?.Trim() ?? "" : "");
+            var parts = sortedKeys.Select(key =>
+                row.TryGetValue(key, out var val) ? val?.ToString()?.Trim() ?? "" : "");
 
-        return string.Join(IdentitySeparator, parts);
+            return string.Join(IdentitySeparator, parts);
+        }
+
+        // Keyless table: use all column values as identity
+        var allParts = metadata.AllColumns
+            .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
+            .Select(col => row.TryGetValue(col, out var val) ? val?.ToString()?.Trim() ?? "" : "");
+
+        return string.Join(IdentitySeparator, allParts);
     }
 
     /// <summary>

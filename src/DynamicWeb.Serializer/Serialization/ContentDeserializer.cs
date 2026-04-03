@@ -76,8 +76,6 @@ public class ContentDeserializer
             };
         }
 
-        var area = _store.ReadTree(_configuration.OutputDirectory);
-
         int totalCreated = 0;
         int totalUpdated = 0;
         int totalSkipped = 0;
@@ -86,6 +84,11 @@ public class ContentDeserializer
 
         foreach (var predicate in _configuration.Predicates)
         {
+            // Resolve the area name from the predicate AreaId to read the correct subfolder
+            var dwArea = Services.Areas.GetArea(predicate.AreaId);
+            var areaName = dwArea?.Name;
+            var area = _store.ReadTree(_configuration.OutputDirectory, areaName);
+
             var result = DeserializePredicate(predicate, area);
             totalCreated += result.Created;
             totalUpdated += result.Updated;

@@ -41,6 +41,10 @@ public class ContentPredicate
         if (string.Equals(candidatePath, basePath, StringComparison.OrdinalIgnoreCase))
             return true;
 
+        // Root path "/" includes everything
+        if (basePath == "/")
+            return candidatePath.StartsWith("/", StringComparison.OrdinalIgnoreCase);
+
         return candidatePath.StartsWith(basePath + "/", StringComparison.OrdinalIgnoreCase);
     }
 }

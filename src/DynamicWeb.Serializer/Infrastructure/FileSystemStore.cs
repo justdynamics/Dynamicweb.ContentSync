@@ -109,14 +109,24 @@ public class FileSystemStore : IContentStore
     // Read
     // -------------------------------------------------------------------------
 
-    public SerializedArea ReadTree(string rootDirectory)
+    public SerializedArea ReadTree(string rootDirectory, string? areaName = null)
     {
-        // Find the single area subdirectory
         var areaDirs = Directory.GetDirectories(rootDirectory);
         if (areaDirs.Length == 0)
             throw new InvalidOperationException($"No area directory found in '{rootDirectory}'.");
 
-        var areaDirectory = areaDirs[0];
+        // If area name specified, find the matching subdirectory
+        string areaDirectory;
+        if (!string.IsNullOrEmpty(areaName))
+        {
+            areaDirectory = areaDirs.FirstOrDefault(d =>
+                Path.GetFileName(d).Equals(areaName, StringComparison.OrdinalIgnoreCase))
+                ?? areaDirs[0]; // fall back to first if not found
+        }
+        else
+        {
+            areaDirectory = areaDirs[0];
+        }
         var areaYmlPath = Path.Combine(areaDirectory, "area.yml");
         var area = ReadYamlFile<SerializedArea>(areaYmlPath);
 

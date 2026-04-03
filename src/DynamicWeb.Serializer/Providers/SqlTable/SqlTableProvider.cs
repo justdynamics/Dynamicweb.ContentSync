@@ -1,3 +1,4 @@
+using System.Globalization;
 using DynamicWeb.Serializer.Models;
 
 namespace DynamicWeb.Serializer.Providers.SqlTable;
@@ -37,7 +38,7 @@ public class SqlTableProvider : SerializationProviderBase
             };
         }
 
-        var metadata = _metadataReader.GetTableMetadata(predicate);
+        var metadata = _metadataReader.GetTableMetadata(predicate, includeColumnDefinitions: true);
         Log($"Serializing table {metadata.TableName}", log);
 
         var rows = _tableReader.ReadAllRows(metadata.TableName).ToList();
@@ -72,52 +73,128 @@ public class SqlTableProvider : SerializationProviderBase
             };
         }
 
+        var tableName = predicate.Table!;
+
+        // If table doesn't exist in target, create it from serialized metadata
+        if (!_metadataReader.TableExists(tableName))
+        {
+            Log($"Table [{tableName}] does not exist in target — creating from serialized schema", log);
+
+            if (!isDryRun)
+            {
+                try
+                {
+                    var serializedMeta = _fileStore.ReadMeta(inputRoot, tableName);
+                    _writer.CreateTableFromMetadata(serializedMeta);
+                    Log($"Created table [{tableName}]", log);
+                }
+                catch (Exception ex)
+                {
+                    Log($"ERROR: Failed to create table [{tableName}]: {ex.Message}", log);
+                    return new ProviderDeserializeResult
+                    {
+                        TableName = tableName,
+                        Errors = [$"Failed to create table [{tableName}]: {ex.Message}"]
+                    };
+                }
+            }
+        }
+
         var metadata = _metadataReader.GetTableMetadata(predicate);
         var yamlRows = _fileStore.ReadAllRows(inputRoot, metadata.TableName).ToList();
         Log($"Deserializing {yamlRows.Count} rows into {metadata.TableName} (isDryRun={isDryRun})", log);
 
-        // Build checksum lookup from existing DB rows for skip-on-unchanged detection
-        var existingChecksums = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var existingRow in _tableReader.ReadAllRows(metadata.TableName))
+        // Coerce YAML string values to proper .NET types for SQL parameterization
+        var columnTypes = _metadataReader.GetColumnTypes(metadata.TableName);
+        var notNullColumns = _metadataReader.GetNotNullColumns(metadata.TableName);
+        foreach (var row in yamlRows)
         {
-            var identity = _tableReader.GenerateRowIdentity(existingRow, metadata);
-            var checksum = _tableReader.CalculateChecksum(existingRow, metadata);
-            existingChecksums[identity] = checksum;
+            CoerceRowTypes(row, columnTypes);
+            FixNotNullDefaults(row, columnTypes, notNullColumns);
+        }
+
+        // Disable FK constraints during deserialization to avoid ordering issues
+        if (!isDryRun)
+        {
+            try { _writer.DisableForeignKeys(metadata.TableName); }
+            catch { /* Table may not have FK constraints */ }
         }
 
         int created = 0, updated = 0, skipped = 0, failed = 0;
         var errors = new List<string>();
 
-        foreach (var yamlRow in yamlRows)
+        // Tables without primary keys: use truncate+insert strategy
+        if (metadata.KeyColumns.Count == 0)
         {
-            var identity = _tableReader.GenerateRowIdentity(yamlRow, metadata);
-            var incomingChecksum = _tableReader.CalculateChecksum(yamlRow, metadata);
-
-            // Skip if existing row has identical checksum (no actual change)
-            if (existingChecksums.TryGetValue(identity, out var existingChecksum)
-                && string.Equals(incomingChecksum, existingChecksum, StringComparison.OrdinalIgnoreCase))
+            Log($"  Table [{metadata.TableName}] has no primary key — using truncate+insert strategy", log);
+            if (!isDryRun)
             {
-                skipped++;
-                Log($"  Skipped {identity} (unchanged)", log);
-                continue;
+                try
+                {
+                    _writer.TruncateAndInsertAll(yamlRows, metadata, log);
+                    created = yamlRows.Count;
+                }
+                catch (Exception ex)
+                {
+                    Log($"  ERROR: truncate+insert failed for [{metadata.TableName}]: {ex.Message}", log);
+                    failed = yamlRows.Count;
+                    errors.Add($"Truncate+insert failed: {ex.Message}");
+                }
+            }
+            else
+            {
+                created = yamlRows.Count;
+            }
+        }
+        else
+        {
+            // Build checksum lookup from existing DB rows for skip-on-unchanged detection
+            var existingChecksums = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var existingRow in _tableReader.ReadAllRows(metadata.TableName))
+            {
+                var identity = _tableReader.GenerateRowIdentity(existingRow, metadata);
+                var checksum = _tableReader.CalculateChecksum(existingRow, metadata);
+                existingChecksums[identity] = checksum;
             }
 
-            var outcome = _writer.WriteRow(yamlRow, metadata, isDryRun);
-            switch (outcome)
+            foreach (var yamlRow in yamlRows)
             {
-                case WriteOutcome.Created:
-                    created++;
-                    break;
-                case WriteOutcome.Updated:
-                    updated++;
-                    break;
-                case WriteOutcome.Failed:
-                    failed++;
-                    errors.Add($"Failed to write row: {identity}");
-                    break;
-            }
+                var identity = _tableReader.GenerateRowIdentity(yamlRow, metadata);
+                var incomingChecksum = _tableReader.CalculateChecksum(yamlRow, metadata);
 
-            Log($"  {outcome} {identity}", log);
+                // Skip if existing row has identical checksum (no actual change)
+                if (existingChecksums.TryGetValue(identity, out var existingChecksum)
+                    && string.Equals(incomingChecksum, existingChecksum, StringComparison.OrdinalIgnoreCase))
+                {
+                    skipped++;
+                    Log($"  Skipped {identity} (unchanged)", log);
+                    continue;
+                }
+
+                var outcome = _writer.WriteRow(yamlRow, metadata, isDryRun, log);
+                switch (outcome)
+                {
+                    case WriteOutcome.Created:
+                        created++;
+                        break;
+                    case WriteOutcome.Updated:
+                        updated++;
+                        break;
+                    case WriteOutcome.Failed:
+                        failed++;
+                        errors.Add($"Failed to write row: {identity}");
+                        break;
+                }
+
+                Log($"  {outcome} {identity}", log);
+            }
+        }
+
+        // Re-enable FK constraints
+        if (!isDryRun)
+        {
+            try { _writer.EnableForeignKeys(metadata.TableName); }
+            catch (Exception ex) { Log($"  WARNING: Could not re-enable FK constraints for [{metadata.TableName}]: {ex.Message}", log); }
         }
 
         Log($"Deserialization complete: {created} created, {updated} updated, {skipped} skipped, {failed} failed", log);
@@ -131,6 +208,88 @@ public class SqlTableProvider : SerializationProviderBase
             TableName = metadata.TableName,
             Errors = errors
         };
+    }
+
+    /// <summary>
+    /// Coerce YAML-deserialized values (mostly strings) to proper .NET types
+    /// so SQL parameterized queries receive the correct type.
+    /// </summary>
+    private static void CoerceRowTypes(Dictionary<string, object?> row, Dictionary<string, string> columnTypes)
+    {
+        foreach (var col in columnTypes)
+        {
+            if (!row.TryGetValue(col.Key, out var value) || value is null)
+                continue;
+
+            // Already correct type from YAML (int, bool, etc.)
+            if (value is not string str)
+            {
+                // YAML may deserialize integers as int but SQL expects long for bigint
+                if (col.Value.Equals("bigint", StringComparison.OrdinalIgnoreCase) && value is int intVal)
+                    row[col.Key] = (long)intVal;
+                continue;
+            }
+
+            if (string.IsNullOrEmpty(str))
+            {
+                // Empty string for non-string types should be null
+                if (!IsStringType(col.Value))
+                    row[col.Key] = null;
+                continue;
+            }
+
+            row[col.Key] = col.Value.ToLowerInvariant() switch
+            {
+                "int" => int.TryParse(str, out var i) ? i : value,
+                "bigint" => long.TryParse(str, out var l) ? l : value,
+                "smallint" => short.TryParse(str, out var s) ? s : value,
+                "tinyint" => byte.TryParse(str, out var b) ? b : value,
+                "bit" => str.Equals("true", StringComparison.OrdinalIgnoreCase) || str == "1" ? true
+                       : str.Equals("false", StringComparison.OrdinalIgnoreCase) || str == "0" ? false
+                       : value,
+                "decimal" or "numeric" or "money" or "smallmoney" =>
+                    decimal.TryParse(str, CultureInfo.InvariantCulture, out var d) ? d : value,
+                "float" => double.TryParse(str, CultureInfo.InvariantCulture, out var f) ? f : value,
+                "real" => float.TryParse(str, CultureInfo.InvariantCulture, out var r) ? r : value,
+                "datetime" or "datetime2" or "smalldatetime" =>
+                    DateTime.TryParse(str, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dt) ? dt : value,
+                "datetimeoffset" =>
+                    DateTimeOffset.TryParse(str, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dto) ? dto : value,
+                "uniqueidentifier" => Guid.TryParse(str, out var g) ? g : value,
+                "varbinary" or "binary" or "image" =>
+                    Convert.TryFromBase64String(str, new byte[str.Length], out _) ? Convert.FromBase64String(str) : value,
+                _ => value // nvarchar, varchar, ntext, text, xml etc. stay as string
+            };
+        }
+    }
+
+    private static bool IsStringType(string sqlType) =>
+        sqlType.ToLowerInvariant() is "nvarchar" or "varchar" or "nchar" or "char" or "ntext" or "text" or "xml";
+
+    /// <summary>
+    /// Replace null values with type-appropriate defaults for NOT NULL columns.
+    /// Prevents "cannot insert NULL" errors during MERGE upsert.
+    /// </summary>
+    private static void FixNotNullDefaults(Dictionary<string, object?> row, Dictionary<string, string> columnTypes, HashSet<string> notNullColumns)
+    {
+        foreach (var col in notNullColumns)
+        {
+            if (!row.ContainsKey(col)) continue;
+            if (row[col] is not null) continue;
+
+            // Substitute appropriate default for NOT NULL columns with null YAML values
+            if (columnTypes.TryGetValue(col, out var sqlType))
+            {
+                row[col] = sqlType.ToLowerInvariant() switch
+                {
+                    "nvarchar" or "varchar" or "nchar" or "char" or "ntext" or "text" or "xml" => "",
+                    "int" or "bigint" or "smallint" or "tinyint" => 0,
+                    "bit" => false,
+                    "decimal" or "numeric" or "money" or "smallmoney" or "float" or "real" => 0m,
+                    _ => row[col] // leave as null for types we can't default (let SQL fail with a clear error)
+                };
+            }
+        }
     }
 
     public override ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate)

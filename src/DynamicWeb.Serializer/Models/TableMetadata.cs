@@ -16,11 +16,17 @@ public record TableMetadata
     public string CompareColumns { get; init; } = "";
 
     /// <summary>Primary key columns from sp_pkeys.</summary>
-    public required IReadOnlyList<string> KeyColumns { get; init; }
+    public required List<string> KeyColumns { get; init; }
 
     /// <summary>Identity (auto-increment) columns.</summary>
-    public required IReadOnlyList<string> IdentityColumns { get; init; }
+    public required List<string> IdentityColumns { get; init; }
 
     /// <summary>All columns in the table.</summary>
-    public required IReadOnlyList<string> AllColumns { get; init; }
+    public required List<string> AllColumns { get; init; }
+
+    /// <summary>
+    /// Full column schema definitions for CREATE TABLE on targets where the table is missing.
+    /// Populated during serialization from INFORMATION_SCHEMA; empty list if not available.
+    /// </summary>
+    public List<ColumnDefinition> ColumnDefinitions { get; init; } = [];
 }

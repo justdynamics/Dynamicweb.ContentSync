@@ -73,7 +73,11 @@ public class FlatFileStore
         {
             var yaml = File.ReadAllText(file, Encoding.UTF8);
             var row = _deserializer.Deserialize<Dictionary<string, object?>>(yaml);
-            yield return row ?? new Dictionary<string, object?>();
+            // Ensure case-insensitive lookup for column name matching with DB schema
+            var caseInsensitive = new Dictionary<string, object?>(
+                row ?? new Dictionary<string, object?>(),
+                StringComparer.OrdinalIgnoreCase);
+            yield return caseInsensitive;
         }
     }
 

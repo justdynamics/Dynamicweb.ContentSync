@@ -106,8 +106,9 @@ public class SerializerOrchestrator
                 for (int i = 0; i < orderedTables.Count; i++)
                     orderIndex[orderedTables[i]] = i;
 
-                // Reorder: non-SqlTable predicates keep original position (front),
-                // SqlTable predicates are sorted by FK dependency order (after non-SqlTable)
+                // Reorder: SqlTable predicates first (FK-sorted, parents before children),
+                // then non-SqlTable predicates (Content etc.) — ensures infrastructure
+                // tables (Area, AccessUser) exist before content deserialization needs them.
                 var nonSqlPredicates = predicates
                     .Where(p => !string.Equals(p.ProviderType, "SqlTable", StringComparison.OrdinalIgnoreCase))
                     .ToList();
@@ -115,7 +116,7 @@ public class SerializerOrchestrator
                     .OrderBy(p => orderIndex.TryGetValue(p.Table ?? "", out var idx) ? idx : int.MaxValue)
                     .ToList();
 
-                predicates = nonSqlPredicates.Concat(sortedSqlPredicates).ToList();
+                predicates = sortedSqlPredicates.Concat(nonSqlPredicates).ToList();
 
                 log?.Invoke($"FK ordering: {string.Join(" -> ", orderedTables)}");
             }
