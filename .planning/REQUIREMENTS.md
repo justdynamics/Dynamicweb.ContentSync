@@ -1,45 +1,47 @@
-# Requirements: v0.3.1 Internal Link Resolution
+# Requirements: v0.4.0 Full Page Fidelity
 
 **Defined:** 2026-04-03
 **Core Value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
 
-## Link Resolution
+## Page Properties
 
-- [x] **LINK-01**: Serializer detects `Default.aspx?ID=NNN` patterns in ItemType field values and rewrites page IDs to target environment IDs during deserialization
-- [x] **LINK-02**: Source-to-target page ID mapping is built using PageUniqueId (GUID) as the bridge — source numeric ID → GUID (from YAML) → target numeric ID (from PageGuidCache)
-- [x] **LINK-03**: Link resolution handles all field types: structured link fields, button fields, and rich text HTML containing embedded links
-- [x] **LINK-04**: Links referencing pages that don't exist in the target are preserved as-is and logged as warnings (no data corruption)
-- [x] **LINK-05**: Paragraph anchor fragments (`Default.aspx?ID=NNN#PPP`) are resolved for both page ID and paragraph ID
+- [ ] **PAGE-01**: All ~30 missing page properties are serialized to YAML and deserialized back (NavigationTag, ShortCut, UrlName, MetaTitle, MetaDescription, MetaCanonical, Noindex, Nofollow, Robots404, SSLMode, PermissionType, UrlIgnoreForChildren, UrlDataProvider, ExactUrl, AllowClick, ShowInSitemap, AllowSearch, ShowInLegend, HideForPhones, HideForTablets, HideForDesktops, ActiveFrom, ActiveTo, DisplayMode, MasterPageId, MasterType, ContentType, ColorSchemeId, TopImage)
+- [ ] **PAGE-02**: ShortCut field values containing Default.aspx?ID=NNN are resolved via InternalLinkResolver during deserialization
 
-## Serialization
+## Ecommerce Navigation
 
-- [x] **SER-01**: SerializedPage DTO includes SourcePageId (numeric) alongside the existing GUID, enabling ID mapping construction at deserialization time
-- [x] **SER-02**: SerializedParagraph DTO includes SourceParagraphId for paragraph anchor resolution
+- [ ] **ECOM-01**: PageNavigationSettings (UseEcomGroups, ParentType, Groups, ShopId, MaxLevels, ProductPage, IncludeProducts, NavigationProvider) are serialized and deserialized
+- [ ] **ECOM-02**: ProductPage field in NavigationSettings containing Default.aspx?ID=NNN is resolved via InternalLinkResolver
 
-## Versioning
+## Area Configuration
 
-- [x] **VER-01**: Git tags re-created from v1.0/v2.0 scheme to 0.x pre-release versioning
+- [ ] **AREA-01**: Area-level ItemType fields (header/footer/master page connections) are serialized to YAML and deserialized back
+- [ ] **AREA-02**: Page ID references in Area ItemType fields are resolved via InternalLinkResolver
+
+## Schema Sync
+
+- [ ] **SCHEMA-01**: EcomProductGroupField custom columns are created on EcomGroups table during deserialization before product group data is imported
 
 ## Future Requirements (deferred)
 
-- Product/group link resolution (`ProductID=`, `GroupID=` references) — separate concern from page links
-- GUID-native YAML storage (store GUIDs instead of numeric IDs in link fields) — breaking format change, deferred to v0.4+
+- Timestamp preservation (CreatedDate/UpdatedDate) — requires direct SQL, lower priority
+- NavigationSettings.Groups ecommerce group ID portability — depends on ecommerce data also being serialized
+- User ID portability for CreatedBy/UpdatedBy — environment-specific, document as limitation
 
 ## Out of Scope
 
-- HTML DOM parsing — regex/string replacement suffices for `Default.aspx?ID=` pattern
-- Per-field-type mapper system — DW uses uniform link format across all field types
-- Real-time link validation — sync tool, not a link checker
+- Backward compatibility with pre-v0.4.0 YAML format — beta, no external consumers
+- Page workflow/approval fields — empty in Swift 2.2, add when needed
+- Page versioning fields — empty in Swift 2.2, add when needed
 
 ## Traceability
 
 | REQ-ID | Phase | Plan | Status |
 |--------|-------|------|--------|
-| LINK-01 | Phase 20 | — | Pending |
-| LINK-02 | Phase 20 | — | Pending |
-| LINK-03 | Phase 20 | — | Pending |
-| LINK-04 | Phase 20 | — | Pending |
-| LINK-05 | Phase 21 | — | Pending |
-| SER-01 | Phase 19 | 19-01 | Complete |
-| SER-02 | Phase 19 | 19-01 | Complete |
-| VER-01 | Phase 22 | — | Pending |
+| PAGE-01 | — | — | Pending |
+| PAGE-02 | — | — | Pending |
+| ECOM-01 | — | — | Pending |
+| ECOM-02 | — | — | Pending |
+| AREA-01 | — | — | Pending |
+| AREA-02 | — | — | Pending |
+| SCHEMA-01 | — | — | Pending |
