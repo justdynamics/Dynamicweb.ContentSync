@@ -957,6 +957,13 @@ public class ContentDeserializer
 
     private void ResolveLinksInArea(int areaId, InternalLinkResolver resolver)
     {
+        // Resolve internal links in area-level ItemType fields (AREA-02)
+        var targetArea = Services.Areas.GetArea(areaId);
+        if (targetArea != null && !string.IsNullOrEmpty(targetArea.ItemType) && !string.IsNullOrEmpty(targetArea.ItemId))
+        {
+            ResolveLinksInItemFields(targetArea.ItemType, targetArea.ItemId, resolver);
+        }
+
         // Re-read all pages in the area and scan their item fields for internal links
         var allPages = Services.Pages.GetPagesByAreaID(areaId);
         foreach (var page in allPages)
