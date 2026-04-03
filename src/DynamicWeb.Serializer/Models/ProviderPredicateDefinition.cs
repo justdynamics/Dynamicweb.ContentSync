@@ -38,4 +38,11 @@ public record ProviderPredicateDefinition
     /// Sourced from DataGroup XML ServiceCaches sections.
     /// </summary>
     public List<string> ServiceCaches { get; init; } = new();
+
+    /// <summary>
+    /// Optional schema sync configuration. When set, the orchestrator runs
+    /// post-deserialize schema sync to ensure custom columns exist on the target table.
+    /// Format: "EcomGroupFields" (only supported value currently).
+    /// </summary>
+    public string? SchemaSync { get; init; }
 }
