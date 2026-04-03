@@ -18,7 +18,7 @@
 
 ## Versioning
 
-- [ ] **VER-01**: Git tags re-created from v1.0/v2.0 scheme to 0.x pre-release versioning
+- [x] **VER-01**: Git tags re-created from v1.0/v2.0 scheme to 0.x pre-release versioning
 
 ## Future Requirements (deferred)
 
